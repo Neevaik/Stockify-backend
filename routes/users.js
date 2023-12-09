@@ -12,7 +12,7 @@ const { checkBody } = require('../modules/checkBody');
 
 
 
-// TODO : Create user in database
+// TODO : Create user in database with hash password
 
 
 // TODO : Get All users
