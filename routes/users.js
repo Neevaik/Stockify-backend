@@ -9,7 +9,15 @@ const { checkBody } = require('../modules/checkBody');
 
 
 
-router.get('/', function(req, res) {
+router.post('/signup', (req, res)=> {
+  
+});
+
+router.post('/signin', (req, res)=> {
+  
+});
+
+router.delete('/:username', (req, res)=> {
   
 });
 
