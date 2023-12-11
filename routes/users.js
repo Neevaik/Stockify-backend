@@ -41,12 +41,26 @@ router.post('/signup', (req, res)=> {
 
       }else{
           // User already exists in database
-      res.json({ result: false, error: 'User already exists' });
+      res.json({ result: false, error: 'User already exists'})
       }
     });
 });
 
+
+
 router.post('/signin', (req, res)=> {
+if (!checkBody(req.body,['username','password'])){
+  res.json({result:false, error:'Missing or empty field'});
+  return;
+}
+User.findOne({username:{$regex:new RegExp(req.body.username,'i')} }).then(data=>{
+  if(bcrypt.compareSync(req.body.password,data.password)){
+    res.json({result:true , token:data.token , username:data.username , storeName:data.storeName});
+  }else{
+    res.json({result:false , error:'User not found or wrong password'})
+  }
+})
+
 
 });
 
