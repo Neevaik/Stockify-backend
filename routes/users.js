@@ -80,9 +80,13 @@ router.post("/signin", (req, res) => {
 });
 
 router.get("/allUser", (req,res) =>{
-  User.find()
-  .then(data => {
-    res.json({data})
+  User.find().then((user)=>{
+    if(user){
+      console.log(user)
+      res.json({result:true })
+    }else{
+      res.json({result:false, error:'User not found'})
+    }
   })
 })
 
@@ -96,8 +100,7 @@ router.delete("/", (req, res) => {
   const { token,username } = req.body;
   
   // Check if the user making the request is an admin
-  User.findOne({token})
-  $.then((requestingUser)=>{
+  User.findOne({token}).then((requestingUser)=>{
     if(!requestingUser||!requestingUser._id){
       res.json({ result: false, error: "Unauthorized" });
     }else{
