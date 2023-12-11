@@ -23,7 +23,7 @@ router.post('/newProduct', (req, res)=> {
             restockAt: JSON.parse(req.body.restockAt),
             category: req.body.category,
         })
-        // Saving of the Product
+        //Saving of the Product
         newProduct.save().then(newProduct => {
             res.json({result: true, newProduct})
         })
@@ -37,7 +37,7 @@ router.post('/newProduct', (req, res)=> {
 ///////////////////////////////////////////////
 //Modification of the Product in fonction of Id
 router.put('/updateProduct/:id', (req, res) => {
-    //Const for paramèter Id
+    //Const for parameter Id
     const id = req.params.id;
     //Update Product's fields
     const updatedProduct = {
@@ -109,7 +109,7 @@ router.get('/allProducts', (req, res) => {
 router.get('/', (req, res) => {
     //Const for parameter Id
     const id = req.params.id;
-    //Recherche par Id
+    //Searching par Id
     Product.findOne({ _id: id }).then(data => {
         if (data) {
         res.json({ result: true, allCategory :[] });
@@ -133,6 +133,8 @@ router.get('/salesToday', (req, res) => {
         //$unwind go in object array of soldAt
         { $unwind: "$soldAt" },
         //$match find and get the date
+        //$gte egal to or greater than
+        //$lt egal to or less than
         { $match: { "soldAt.date": { $gte: today, $lt: tomorrow } } },
         //$group the name of article and quantity
         { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
@@ -140,6 +142,70 @@ router.get('/salesToday', (req, res) => {
     .then(data => {
         if (data.length > 0) {
             res.json({ result: true, salesToday: data });
+        } else {
+            res.json({ result: false, error: 'No sales found for today' });
+        }
+    })
+    .catch(error => {
+        res.json({ result: false, error });
+    });
+});
+
+////////////////////////////
+//GET Selling By Present Week
+router.get('/salesOfTheWeek', (req, res) => {
+    //Get the date of to Week
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+    //Get the date 7 days later
+    let week = new Date(today);
+    week.setDate(week.getDate() + 7);
+
+    Product.aggregate([
+        //$unwind go in object array of soldAt
+        { $unwind: "$soldAt" },
+        //$match find and get the date
+        //$gte egal to or greater than
+        //$lt egal to or less than
+        { $match: { "soldAt.date": { $gte: today, $lt: week } } },
+        //$group the name of article and quantity
+        { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
+    ])
+    .then(data => {
+        if (data.length > 0) {
+            res.json({ result: true, salesOfTheWeek: data });
+        } else {
+            res.json({ result: false, error: 'No sales found for today' });
+        }
+    })
+    .catch(error => {
+        res.json({ result: false, error });
+    });
+});
+
+////////////////////////////
+//GET Selling By Present Month
+router.get('/salesOfTheMonth', (req, res) => {
+    //Get the date of to Month
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+    //Get the date 30 days later
+    let month = new Date(today);
+    month.setDate(month.getDate() + 7);
+
+    Product.aggregate([
+        //$unwind go in object array of soldAt
+        { $unwind: "$soldAt" },
+        //$match find and get the date
+        //$gte egal to or greater than
+        //$lt egal to or less than
+        { $match: { "soldAt.date": { $gte: today, $lt: month } } },
+        //$group the name of article and quantity
+        { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
+    ])
+    .then(data => {
+        if (data.length > 0) {
+            res.json({ result: true, salesOfTheWeek: data });
         } else {
             res.json({ result: false, error: 'No sales found for today' });
         }
