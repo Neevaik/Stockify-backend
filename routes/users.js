@@ -26,17 +26,28 @@ router.post('/signup', (req, res)=> {
     User.findOne({username :{$regex : new RegExp(req.body.username,'i')}}).then(data =>{
       if (data === null){
         const hash= bcrypt.hashSync(req.body.password,10);
+
+        const newUser= new User ({
+
+        storeName : req.body.storeName,
+        username: req.body.username,
+        email: req.body.email,
+        token: uid2(32),
+        password: hash,
+      });
+      newUser.save().then(data => {
+        res.json({ result: true, token: data.token });
+      });
+
+      }else{
+          // User already exists in database
+      res.json({ result: false, error: 'User already exists' });
       }
-
-    })
-
-
-
-
+    });
 });
 
 router.post('/signin', (req, res)=> {
-  
+
 });
 
 router.delete('/:username', (req, res)=> {
