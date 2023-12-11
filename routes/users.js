@@ -6,8 +6,10 @@ var router = express.Router();
 const User = require('../models/users');
 const { checkBody } = require('../modules/checkBody');
 
+
 // creation d 'un token unique par utilisateur;
 const uid2 = require('uid2');
+
 
 //hashage du mot de passe ;
 const bcrypt = require('bcrypt');
@@ -23,7 +25,7 @@ router.post('/signup', (req, res)=> {
       if (data === null){
         const hash= bcrypt.hashSync(req.body.password,10);
       }
-      
+
     })
 
 
