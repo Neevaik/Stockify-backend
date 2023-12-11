@@ -14,43 +14,62 @@ const uid2 = require("uid2");
 //hashage du mot de passe ;
 const bcrypt = require("bcrypt");
 
-
-// check si un utilisateur existe deja  si non permet de créer un utilisateur 
+// check si un utilisateur existe deja  si non permet de créer un utilisateur
 router.post("/signup", (req, res) => {
   if (!checkBody(req.body, ["storeName", "username", "password", "email"])) {
     res.json({ result: false, error: "Missing or empty fields" });
     return;
   }
-  User.findOne({
-    username: { $regex: new RegExp(req.body.username, "i") },
-  }).then((data) => {
-    if (data === null) {
-      const hash = bcrypt.hashSync(req.body.password, 10);
 
-      const newUser = new User({
-        storeName: req.body.storeName,
-        username: req.body.username,
-        email: req.body.email,
-        token: uid2(32),
-        password: hash,
-      });
-      newUser.save().then((data) => {
-        res.json({ result: true, token: data.token });
-      });
+  // check if user is admin
+  const token = req.body.token;
+
+  User.findOne({ token }).then((requestingUser) => {
+    if (!requestingUser || !requestingUser._id) {
+      res.json({ result: false, error: "Unauthorized" });
     } else {
-      // User already exists in database
-      res.json({ result: false, error: "User already exists" });
+      if (requestingUser.isAdmin) {
+        // if user is admin can  create a new user
+        User.findOne({
+          username: { $regex: new RegExp(req.body.username, "i") },
+        }).then((data) => {
+          if (data === null) {
+            const hash = bcrypt.hashSync(req.body.password, 10);
+
+            const newUser = new User({
+              storeName: req.body.storeName,
+              username: req.body.username,
+              email: req.body.email,
+              token: uid2(32),
+              password: hash,
+            });
+
+            newUser.save().then((data) => {
+              res.json({ result: true, token: data.token });
+            });
+          } else {
+            // user already exist in database
+            res.json({ result: false, error: "User already exists" });
+          }
+        });
+      } else {
+        // 'user is not admin
+        res.json({
+          result: false,
+          error: "Permission denied. Admin access required.",
+        });
+      }
     }
   });
 });
 
 router.put("/updateAdmin", (req, res) => {
-  const { token,username } = req.body;
-  
-  User.findOne({token}).then((requestingUser)=>{
-    if(!requestingUser||!requestingUser._id){
+  const { token, username } = req.body;
+
+  User.findOne({ token }).then((requestingUser) => {
+    if (!requestingUser || !requestingUser._id) {
       res.json({ result: false, error: "Unauthorized" });
-    }else{
+    } else {
       User.updateOne({ username }, { $set: { isAdmin: true } }).then(() => {
         User.find().then(() => {
           res.json({
@@ -60,13 +79,10 @@ router.put("/updateAdmin", (req, res) => {
         });
       });
     }
-  })
-
-  
+  });
 });
 
-
- //Permet de verifier si l'utilsateur existe avant de ce connecter
+//Permet de verifier si l'utilsateur existe avant de ce connecter
 router.post("/signin", (req, res) => {
   if (!checkBody(req.body, ["username", "password"])) {
     res.json({ result: false, error: "Missing or empty field" });
@@ -88,48 +104,38 @@ router.post("/signin", (req, res) => {
   });
 });
 
-router.get("/allUser", (req,res) =>{
-  User.find()
-  .then(data=>{
-    if(data){
-      res.json({data})
-    }else{
-      res.json({result:false, error:'User not found'})
+router.get("/allUser", (req, res) => {
+  User.find().then((data) => {
+    if (data) {
+      res.json({ data });
+    } else {
+      res.json({ result: false, error: "User not found" });
     }
-  })
-})
-
-
-
-
-
-
+  });
+});
 
 router.delete("/", (req, res) => {
-  const { token,username } = req.body;
-  
+  const { token, username } = req.body;
+
   // Check if the user making the request is an admin
-  User.findOne({token}).then((requestingUser)=>{
-    if(!requestingUser||!requestingUser._id){
+  User.findOne({ token }).then((requestingUser) => {
+    if (!requestingUser || !requestingUser._id) {
       res.json({ result: false, error: "Unauthorized" });
-    }else{
+    } else {
       // retrieve the user to be delete
 
-      User.findOne({ username }).then((userToDelete)=>{
-        if(!userToDelete){
-          res.json({result: false, error: "User not found"})
-        }else{
+      User.findOne({ username }).then((userToDelete) => {
+        if (!userToDelete) {
+          res.json({ result: false, error: "User not found" });
+        } else {
           // delete the user
-          User.deleteOne({ _id: userToDelete._id }).then(()=>{
+          User.deleteOne({ _id: userToDelete._id }).then(() => {
             res.json({ result: true, message: "User deleted successfully" });
-          })
-        };
-      })
-    };
-  })
-
-  
-  
+          });
+        }
+      });
+    }
+  });
 });
 
 module.exports = router;
