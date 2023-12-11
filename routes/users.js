@@ -48,8 +48,7 @@ router.put("/updateAdmin", (req, res) => {
   const { token } = req.body;
 
   User.updateOne({ token }, { $set: { isAdmin: true } }).then(() => {
-    User.find().then((data) => {
-      console.log(data);
+    User.find().then(() => {
       res.json({
         result: true,
         message: "user status:isAdmin update to true ",
@@ -80,10 +79,10 @@ router.post("/signin", (req, res) => {
 });
 
 router.get("/allUser", (req,res) =>{
-  User.find().then((user)=>{
-    if(user){
-      console.log(user)
-      res.json({result:true })
+  User.find()
+  .then(data=>{
+    if(data){
+      res.json({data})
     }else{
       res.json({result:false, error:'User not found'})
     }
