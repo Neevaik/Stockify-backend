@@ -19,7 +19,6 @@ router.post('/newProduct', (req, res)=> {
             name: req.body.name,
             image: req.body.image,
             stock: req.body.stock,
-            soldAt: JSON.parse(req.body.soldAt),
             restockAt: JSON.parse(req.body.restockAt),
             category: req.body.category,
         })
