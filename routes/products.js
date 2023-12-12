@@ -18,10 +18,12 @@ router.post('/newProduct', (req, res)=> {
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
-            stock: req.body.stock,
-            //date: currentDate
-            soldAt: JSON.parse(req.body.soldAt),
-            restockAt: JSON.parse(req.body.restockAt),
+            // default to 0 if not provided
+            stock: req.body.stock || 0,
+            // default to empty array if not provided
+            soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+            // default to empty array if not provided
+            restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
             category: req.body.category,
         })
         //Saving of the Product
