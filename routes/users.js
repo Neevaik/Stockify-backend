@@ -1,4 +1,3 @@
-//#region Imports
 
 var express = require("express");
 var router = express.Router();
@@ -14,73 +13,74 @@ const uid2 = require("uid2");
 //hashage du mot de passe ;
 const bcrypt = require("bcrypt");
 
-// check si un utilisateur existe deja  si non permet de créer un utilisateur
-router.post("/signup", (req, res) => {
+
+router.post("/addUser", (req, res) => {
   if (!checkBody(req.body, ["storeName", "username", "password", "email"])) {
     res.json({ result: false, error: "Missing or empty fields" });
     return;
   }
 
-  // check if user is admin
-  const token = req.body.token;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  User.findOne({ token }).then((requestingUser) => {
-    if (!requestingUser || !requestingUser._id) {
-      res.json({ result: false, error: "Unauthorized" });
-    } else {
-      if (requestingUser.isAdmin) {
-        // if user is admin can  create a new user
-        User.findOne({
-          username: { $regex: new RegExp(req.body.username, "i") },
-        }).then((data) => {
-          if (data === null) {
-            const hash = bcrypt.hashSync(req.body.password, 10);
+  // permet de verifier le format d'un email comforme
+  if (!emailRegex.test(req.body.email)) {
+    res.json({ result: false, error: "Invalid email format" });
+    return;
+  }
 
-            const newUser = new User({
-              storeName: req.body.storeName,
-              username: req.body.username,
-              email: req.body.email,
-              token: uid2(32),
-              password: hash,
-            });
+  // Check if the user with the specified email already exists
+  User.findOne({ email: req.body.email }).then((data) => {
+    if (data === null) {
+      // If the user doesn't exist, hash the password and create a new user
+      const hash = bcrypt.hashSync(req.body.password, 10);
 
-            newUser.save().then((data) => {
-              res.json({ result: true, token: data.token });
-            });
-          } else {
-            // user already exist in database
-            res.json({ result: false, error: "User already exists" });
-          }
-        });
-      } else {
-        // 'user is not admin
-        res.json({
-          result: false,
-          error: "Permission denied. Admin access required.",
-        });
-      }
-    }
-  });
-});
-
-router.put("/updateAdmin", (req, res) => {
-  const { token, username } = req.body;
-
-  User.findOne({ token }).then((requestingUser) => {
-    if (!requestingUser || !requestingUser._id) {
-      res.json({ result: false, error: "Unauthorized" });
-    } else {
-      User.updateOne({ username }, { $set: { isAdmin: true } }).then(() => {
-        User.find().then(() => {
-          res.json({
-            result: true,
-            message: "user status:isAdmin update to true ",
-          });
-        });
+      const newUser = new User({
+        storeName: req.body.storeName,
+        username: req.body.username,
+        email: req.body.email,
+        token: uid2(32),
+        password: hash,
       });
+
+      // Save the new user to the database
+      newUser.save().then((data) => {
+        res.json({ result: true, token: data.token });
+      });
+    } else {
+      // If the user already exists, return an error
+      res.json({ result: false, error: "User already exists" });
     }
   });
 });
+
+router.put("/updateUser/:id", (req, res) => {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  // permet de verifier le format d'un email comforme
+  if (!emailRegex.test(req.body.email)) {
+    res.json({ result: false, error: "Invalid email format" });
+    return;
+  }
+
+  const id = req.params.id;
+  User.updateOne(
+    { _id: id },
+    {
+      isAdmin: req.body.isAdmin,
+      username: req.body.username,
+      email: req.body.email,
+    }
+  ).then(() => {
+    User.find().then(() => {
+      res.json({
+        result: true,
+        message: "user update  ",
+      });
+    });
+  });
+});
+
+
 
 //Permet de verifier si l'utilsateur existe avant de ce connecter
 router.post("/signin", (req, res) => {
@@ -88,6 +88,15 @@ router.post("/signin", (req, res) => {
     res.json({ result: false, error: "Missing or empty field" });
     return;
   }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  // permet de verifier le format d'un email comforme
+  if (!emailRegex.test(req.body.email)) {
+    res.json({ result: false, error: "Invalid email format" });
+    return;
+  }
+
   User.findOne({
     username: { $regex: new RegExp(req.body.username, "i") },
   }).then((data) => {
@@ -104,6 +113,8 @@ router.post("/signin", (req, res) => {
   });
 });
 
+
+// affiche tout les utilisateur
 router.get("/allUser", (req, res) => {
   User.find().then((data) => {
     if (data) {
@@ -114,25 +125,21 @@ router.get("/allUser", (req, res) => {
   });
 });
 
-router.delete("/", (req, res) => {
-  const { token, username } = req.body;
 
-  // Check if the user making the request is an admin
-  User.findOne({ token }).then((requestingUser) => {
-    if (!requestingUser || !requestingUser._id) {
-      res.json({ result: false, error: "Unauthorized" });
+
+
+router.delete("/:email", (req, res) => {
+  const { username } = req.body;
+  const { email } = req.params;
+
+  // retrieve the user to be delete
+  User.findOne({ username }).then((userToDelete) => {
+    if (!userToDelete) {
+      res.json({ result: false, error: "User not found" });
     } else {
-      // retrieve the user to be delete
-
-      User.findOne({ username }).then((userToDelete) => {
-        if (!userToDelete) {
-          res.json({ result: false, error: "User not found" });
-        } else {
-          // delete the user
-          User.deleteOne({ _id: userToDelete._id }).then(() => {
-            res.json({ result: true, message: "User deleted successfully" });
-          });
-        }
+      // delete the user
+      User.deleteOne({ _id: userToDelete._id }).then(() => {
+        res.json({ result: true, message: "User deleted successfully" });
       });
     }
   });
