@@ -40,35 +40,80 @@ router.post('/newProduct', (req, res) => {
 
 ///////////////////////////////////////////////
 //Modification of the Product in fonction of Id
+// router.put('/updateProduct/:id', (req, res) => {
+//     //Const for parameter Id
+//     const id = req.params.id;
+//     //Update Product's fields
+//     const updatedProduct = {
+//       name: req.body.name,
+//       image: req.body.image,
+//       stock: req.body.stock,
+//       soldAt: JSON.parse(req.body.soldAt),
+//       restockAt: JSON.parse(req.body.restockAt),
+//       categories: req.body.categories,
+//     };
+//     //Research for Product with his Id
+//     Product.findOneAndUpdate({_id: id}, updatedProduct, {new: true})
+//     //Bringing categories
+//     .populate('categories')
+//     .then(product => {
+//         //If Product true
+//         if(product) {
+//         res.json({result: true, product});
+//         } else {
+//         //No matching case
+//         res.json({result: false, error: 'Product not found'});
+//         }
+//     })
+//     .catch(error => {
+//         //Something wen't wrong
+//         res.json({result: false, error});
+//     });
+// });
+
 router.put('/updateProduct/:id', (req, res) => {
-    //Const for parameter Id
     const id = req.params.id;
-    //Update Product's fields
     const updatedProduct = {
       name: req.body.name,
       image: req.body.image,
       stock: req.body.stock,
-      soldAt: req.body.soldAt,
-      restockAt: req.body.restockAt,
+      soldAt: JSON.parse(req.body.soldAt),
+      restockAt: JSON.parse(req.body.restockAt),
+      categories: req.body.categories,
     };
-    //Research for Product with his Id
-    Product.findOneAndUpdate({_id: id}, updatedProduct, {new: true})
-        //Bringing categories
-        .populate('categories')
-        .then(product => {
-            //If Product true
-            if(product) {
-            res.json({result: true, product});
-            } else {
-            //No matching case
-            res.json({result: false, error: 'Product not found'});
-            }
+    Product.findOneAndUpdate({_id: id}, updatedProduct)
+        .then(() => {
+            Product.findById(id)
+                .populate('categories')
+                .then(product => {
+                    if(product) {
+                        res.json({result: true, product});
+                    } else {
+                        res.json({result: false, error: 'Product not found'});
+                    }
+                })
+                .catch(error => {
+                    if (error.path === 'categories') {
+                        // Si une erreur de peuplement se produit, renvoyez le document non peuplé
+                        Product.findById(id)
+                            .then(product => {
+                                if(product) {
+                                    res.json({result: true, product});
+                                } else {
+                                    res.json({result: false, error: 'Product not found'});
+                                }
+                            })
+                    } else {
+                        res.json({result: false, error});
+                    }
+                });
         })
         .catch(error => {
-            //Something wen't wrong
             res.json({result: false, error});
         });
-  });
+});
+
+
 
 //////////////////////////
 //Delete route for Product
