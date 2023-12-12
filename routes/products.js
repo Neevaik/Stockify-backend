@@ -1,147 +1,188 @@
 var express = require('express');
 var router = express.Router();
 
-//Require du Model de Models
+//Require Product from Models
 const Product = require('../models/products')
 
-//////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 //Creation new Product
-router.post('/newProduct', (req, res) => {
-    Product.findOne({ name: req.body.name })
-        // Bringing categories
-        .populate('category')
-        .then(data => {
-            // Checking if product already exists
-            if (data === null) {
-                // If not existing = Creation
-
-                const currentDate = new Date();
-
-                const newProduct = new Product({
-                    name: req.body.name,
-                    image: req.body.image,
-                    stock: req.body.stock,
-                    soldAt: [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }],
-                    restockAt: JSON.parse(req.body.restockAt),
-                    category: req.body.category,
-                })
-
-                // Saving of the Product
-                newProduct.save().then(newProduct => {
-                    res.json({ result: true, newProduct })
-                })
-            } else {
-                // Product already exists
-                res.json({ result: false, error: 'Product already exists' })
-            }
+router.post('/newProduct', (req, res)=> {
+  Product.findOne({name: req.body.name})
+  //Bringing categories
+  .populate('category')
+  .then(data => {
+    
+    //Checking if product already exists
+    if(data === null) {
+        //If not existing = Creation
+        const newProduct = new Product({
+            name: req.body.name,
+            image: req.body.image,
+            // default to 0 if not provided
+            stock: req.body.stock || 0,
+            // default to empty array if not provided
+            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
+            soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
+            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+            // default to empty array if not provided
+            restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
+            category: req.body.category,
         })
+        //Saving of the Product
+        newProduct.save().then(newProduct => {
+            res.json({result: true, newProduct})
+        })
+    }else{
+        //Product already exists
+        res.json({result: false, error: 'Product already exists'})
+    }
+  })
 });
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//  Modification new Product        //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Route de base à conserver        //
+// Pour toute modification Admin    //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+router.put('/updateProduct/:name', async (req, res) => {
 
-///////////////////////////////////////////////
-//Modification of the Product in fonction of Id
-// router.put('/updateProduct/:id', (req, res) => {
-//     //Const for parameter Id
-//     const id = req.params.id;
-//     //Update Product's fields
-//     const updatedProduct = {
-//       name: req.body.name,
-//       image: req.body.image,
-//       stock: req.body.stock,
-//       soldAt: JSON.parse(req.body.soldAt),
-//       restockAt: JSON.parse(req.body.restockAt),
-//       categories: req.body.categories,
-//     };
-//     //Research for Product with his Id
-//     Product.findOneAndUpdate({_id: id}, updatedProduct, {new: true})
-//     //Bringing categories
-//     .populate('categories')
-//     .then(product => {
-//         //If Product true
-//         if(product) {
-//         res.json({result: true, product});
-//         } else {
-//         //No matching case
-//         res.json({result: false, error: 'Product not found'});
-//         }
-//     })
-//     .catch(error => {
-//         //Something wen't wrong
-//         res.json({result: false, error});
-//     });
-// });
+    // Check if name is provided
+    if (!req.body.name) {
+        return res.json({result: false, error: 'Name is required'});
+    }
 
-router.put('/updateProduct/:id', (req, res) => {
-    const id = req.params.id;
+    const name = req.params.name;
     const updatedProduct = {
       name: req.body.name,
       image: req.body.image,
-      stock: req.body.stock,
-      soldAt: JSON.parse(req.body.soldAt),
-      restockAt: JSON.parse(req.body.restockAt),
+      //stock: req.body.stock,
+      //soldAt: JSON.parse(req.body.soldAt),
+      //restockAt: JSON.parse(req.body.restockAt),
       categories: req.body.categories,
     };
-    Product.findOneAndUpdate({_id: id}, updatedProduct)
-        .then(() => {
-            Product.findById(id)
-                .populate('categories')
-                .then(product => {
-                    if(product) {
-                        res.json({result: true, product});
-                    } else {
-                        res.json({result: false, error: 'Product not found'});
-                    }
-                })
-                .catch(error => {
-                    if (error.path === 'categories') {
-                        // Si une erreur de peuplement se produit, renvoyez le document non peuplé
-                        Product.findById(id)
-                            .then(product => {
-                                if(product) {
-                                    res.json({result: true, product});
-                                } else {
-                                    res.json({result: false, error: 'Product not found'});
-                                }
-                            })
-                    } else {
-                        res.json({result: false, error});
-                    }
-                });
-        })
-        .catch(error => {
-            res.json({result: false, error});
-        });
-});
-
-
-
-//////////////////////////
-//Delete route for Product
-router.delete('/deleteProduct/:id', (req, res) => {
-//Const for parameter Id
-const id = req.params.id;
-
-//Delete a Product in fonction of Id
-Product.findOneAndDelete({_id: id})
-    //Bringing categories
-    .populate('categories')
-    .then(product => {
-    if(product) {
-        //Succes
-        res.json({result: true, message: 'Product deleted successfully'});
-    } else {
-        //Product not found
-        res.json({result: false, error: 'Product not found'});
+  
+    try {
+      // Ask findOneAndUpdate to return the updated document
+      // First parameter is the Search's Object / Object who hold new information
+      // new: true specify to send the new version of the doc instead of the original
+      const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+      .populate('category');
+      if (product) {
+        res.json({ result: true, product });
+      } else {
+        res.json({ result: false, error: 'Product not found' });
+      }
+    } catch (error) {
+      res.json({ result: false, error });
     }
-    })
-    .catch(error => {
-    //Something went wrong
-    res.json({result: false, error});
-    });
-});
+  });
 
 //////////////////////////
+//Update Stock Only
+//Data format number only
+router.put('/updateStockProduct/:name', async (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+
+      stock: req.body.stock,
+
+    };
+  
+    try {
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+            
+        }
+  });
+
+//////////////////////////
+//Update soldAt Only
+//Data format [{"date":"YYYY/MM/DD","quantity":X}]
+router.put('/updateSoldAtProduct/:name', async (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+
+      soldAt: JSON.parse(req.body.soldAt),
+
+    };
+  
+    try {
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
+  });
+
+//////////////////////////
+//Update restockAt Only
+//Data format [{"date":"YYYY/MM/DD","quantity":X}]
+router.put('/updateRestockAtProduct/:name', async (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+
+      restockAt: JSON.parse(req.body.restockAt),
+
+    };
+  
+    try {
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
+  });
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//Delete route for Product
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+router.delete('/deleteProduct/:name', async (req, res) => {
+    const name = req.params.name;
+  
+    try {
+        // Ask findOneAndUpdate to return the updated document
+        const product = await Product.findOneAndDelete({ name: name })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, message: 'Product deleted successfully' });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
+  });
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 //GET All Products
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 router.get('/allProducts', (req, res) => {
     //GET All Products
     Product.find().then(data => {
@@ -168,7 +209,9 @@ router.get('/', (req, res) => {
     });
 });
 
-////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Get selling by periode
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 //GET Selling By Present Day
 router.get('/salesToday', (req, res) => {
     //Get the date of to day

@@ -128,7 +128,7 @@ router.get("/allUser", (req, res) => {
   });
 });
 
-router.get("/user", (req, res) => {
+router.post("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({username}).then((data) => {
     // console.log(data)
