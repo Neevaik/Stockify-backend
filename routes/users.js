@@ -17,7 +17,7 @@ const bcrypt = require("bcrypt");
 //deacher un mot de passe
 
 router.post("/addUser", (req, res) => {
-  if (!checkBody(req.body, ["storeName", "username", "password", "email"])) {
+  if (!checkBody(req.body, ["username", "password", "email"])) {
     res.json({ result: false, error: "Missing or empty fields" });
     return;
   }
@@ -42,6 +42,7 @@ router.post("/addUser", (req, res) => {
         email: req.body.email,
         token: uid2(32),
         password: hash,
+        isAdmin: req.body.isAdmin,
       });
 
       // Save the new user to the database
@@ -133,7 +134,7 @@ router.delete("/:email", (req, res) => {
   const { email } = req.params;
 
   // retrieve the user to be delete
-  User.findOne({ username }).then((userToDelete) => {
+  User.findOne({ email }).then((userToDelete) => {
     if (!userToDelete) {
       res.json({ result: false, error: "User not found" });
     } else {
