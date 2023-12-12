@@ -1,7 +1,9 @@
+const mongoose = require('mongoose');
 var express = require('express');
 var router = express.Router();
 
 const Category = require ('../models/categories')
+const Product = require('../models/products'); 
 
 //////////////////////
 //Creation new Category
@@ -29,16 +31,16 @@ router.post('/newCategory', (req, res)=> {
 
 ///////////////////////////////////////////////
 //Modification of the Category in fonction of Id
-router.put('/updateCategory/:id', (req, res) => {
+router.put('/updateCategory/:name', (req, res) => {
     //Const for paramèter Id
-    const id = req.params.id;
+    const name = req.params.name;
     //Update Category's fields
     const updatedCategory = {
       name: req.body.name,
       image: req.body.image,
     }; 
     //Research for Category with his Id
-    Category.findOneAndUpdate({_id: id}, updatedCategory, {new: true})
+    Category.findOneAndUpdate({name: name}, updatedCategory, {new: true})
         .then(category => {
             //If Category true
             if(category) {
@@ -56,26 +58,34 @@ router.put('/updateCategory/:id', (req, res) => {
 
 //////////////////////////
 //Delete route for Category
-router.delete('/deleteCategory/:id', (req, res) => {
-    //Const for parameter Id
-    const id = req.params.id;
-    
-    //Delete a Category in fonction of Id
-    Category.findOneAndDelete({_id: id})
-        .then(category => {
+router.delete('/deleteCategory/:name', async (req, res) => {
+    const name = req.params.name;
+
+    try {
+        // Find the category first by name
+        const category = await Category.findOne({ name: name });
         if(category) {
-            //Succes
-            res.json({result: true, message: 'Category deleted successfully'});
+            // Update products with the foreign key
+            const result = await Product.updateMany(
+                { category: category._id }, // find products with the category id
+                { $pull: { category: category._id } } // remove the category id from the array
+            );
+
+            if (result) {
+                // Delete the category after updating the products
+                await Category.findByIdAndDelete(category._id);
+                res.json({result: true, message: 'Category and related products updated successfully'});
+            } else {
+                res.json({result: false, error: 'Failed to update products'});
+            }
         } else {
-            //Category not found
             res.json({result: false, error: 'Category not found'});
         }
-        })
-        .catch(error => {
-        //Something went wrong
+    } catch (error) {
         res.json({result: false, error});
-        });
-    });
+    }
+});
+
 
 //////////////////////////
 //GET All Category
@@ -93,9 +103,9 @@ router.get('/allCategories', (req, res) => {
 //GET By ID route for Category
 router.get('/', (req, res) => {
     //Const for parameter Id
-    const id = req.params.id;
+    const name = req.params.name;
 
-    Category.findOne({ _id: id }).then(data => {
+    Category.findOne({ name: name }).then(data => {
         if (data) {
         res.json({ result: true, allCategory :[] });
         } else {

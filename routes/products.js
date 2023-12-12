@@ -1,85 +1,66 @@
 var express = require('express');
 var router = express.Router();
 
-//Require du Model de Models
+//Require Product from Models
 const Product = require('../models/products')
 
 //////////////////////
 //Creation new Product
 router.post('/newProduct', (req, res)=> {
-  Product.findOne({name: req.body.name})
-  //Bringing categories
-  .populate('category')
-  .then(data => {
-    
-    //Checking if product already exists
-    if(data === null) {
-        //If not existing = Creation
-        const newProduct = new Product({
-            name: req.body.name,
-            image: req.body.image,
-            stock: req.body.stock,
-            soldAt: JSON.parse(req.body.soldAt),
-            restockAt: JSON.parse(req.body.restockAt),
-            category: req.body.category,
-        })
-        //Saving of the Product
-        newProduct.save().then(newProduct => {
-            res.json({result: true, newProduct})
-        })
-    }else{
-        //Product already exists
-        res.json({result: false, error: 'Product already exists'})
+    // Check if name is provided
+    if (!req.body.name) {
+      return res.json({result: false, error: 'Name is required'});
     }
-  })
-});
+  
+    Product.findOne({name: req.body.name})
+    //Bringing categories
+    .populate('category')
+    .then(data => {
+      
+      //Checking if product already exists
+      if(data === null) {
+          //If not existing = Creation
+          const newProduct = new Product({
+                name: req.body.name,
+                image: req.body.image,
+                // default to 0 if not provided
+                stock: req.body.stock || 0,
+                // default to empty array if not provided
+                soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+                // default to empty array if not provided
+                restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
+                category: req.body.category,
+          })
+          //Saving of the Product
+          newProduct.save().then(newProduct => {
+              res.json({result: true, newProduct})
+          })
+      }else{
+          //Product already exists
+          res.json({result: false, error: 'Product already exists'})
+      }
+    })
+  });
 
-///////////////////////////////////////////////
-//Modification of the Product in fonction of Id
-// router.put('/updateProduct/:id', (req, res) => {
-//     //Const for parameter Id
-//     const id = req.params.id;
-//     //Update Product's fields
-//     const updatedProduct = {
-//       name: req.body.name,
-//       image: req.body.image,
-//       stock: req.body.stock,
-//       soldAt: JSON.parse(req.body.soldAt),
-//       restockAt: JSON.parse(req.body.restockAt),
-//       categories: req.body.categories,
-//     };
-//     //Research for Product with his Id
-//     Product.findOneAndUpdate({_id: id}, updatedProduct, {new: true})
-//     //Bringing categories
-//     .populate('categories')
-//     .then(product => {
-//         //If Product true
-//         if(product) {
-//         res.json({result: true, product});
-//         } else {
-//         //No matching case
-//         res.json({result: false, error: 'Product not found'});
-//         }
-//     })
-//     .catch(error => {
-//         //Something wen't wrong
-//         res.json({result: false, error});
-//     });
-// });
-
-router.put('/updateProduct/:id', (req, res) => {
-    const id = req.params.id;
+////////////////////////////////
+//  Modification new Product  //
+////////////////////////////////
+// Route de base à conserver  //
+// Pour toute modifi Admin    //
+////////////////////////////////
+router.put('/updateProduct/:name', (req, res) => {
+    const name = req.params.name;
     const updatedProduct = {
-      name: req.body.name,
+      name: name,
       image: req.body.image,
-      stock: req.body.stock,
-      soldAt: JSON.parse(req.body.soldAt),
-      restockAt: JSON.parse(req.body.restockAt),
+      //stock: req.body.stock,
+      //soldAt: JSON.parse(req.body.soldAt),
+      //restockAt: JSON.parse(req.body.restockAt),
       categories: req.body.categories,
     };
-    Product.findOneAndUpdate({_id: id}, updatedProduct)
+    Product.findOneAndUpdate({name: name}, updatedProduct)
         .then(() => {
-            Product.findById(id)
+            Product.findOne({name: name})
                 .populate('categories')
                 .then(product => {
                     if(product) {
@@ -91,7 +72,7 @@ router.put('/updateProduct/:id', (req, res) => {
                 .catch(error => {
                     if (error.path === 'categories') {
                         // Si une erreur de peuplement se produit, renvoyez le document non peuplé
-                        Product.findById(id)
+                        Product.findOne({name: name})
                             .then(product => {
                                 if(product) {
                                     res.json({result: true, product});
@@ -110,6 +91,137 @@ router.put('/updateProduct/:id', (req, res) => {
 });
 
 
+//////////////////////////
+// Update Stock Only
+router.put('/updateStockProduct/:name', (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+      // name: req.body.name, // Name is in comment because it shoun't be able to get a mod'
+      //image: req.body.image,
+      stock: req.body.stock,
+      //soldAt: JSON.parse(req.body.soldAt),
+      //restockAt: JSON.parse(req.body.restockAt),
+      //categories: req.body.categories,
+    };
+    Product.findOneAndUpdate({name: name}, updatedProduct)
+        .then(() => {
+            Product.findOne({name: name})
+                .populate('categories')
+                .then(product => {
+                    if(product) {
+                        res.json({result: true, product});
+                    } else {
+                        res.json({result: false, error: 'Product not found'});
+                    }
+                })
+                .catch(error => {
+                    if (error.path === 'categories') {
+                        // Si une erreur de peuplement se produit, renvoyez le document non peuplé
+                        Product.findOne({name: name})
+                            .then(product => {
+                                if(product) {
+                                    res.json({result: true, product});
+                                } else {
+                                    res.json({result: false, error: 'Product not found'});
+                                }
+                            })
+                    } else {
+                        res.json({result: false, error});
+                    }
+                });
+        })
+        .catch(error => {
+            res.json({result: false, error});
+        });
+});
+
+//////////////////////////
+//Update soldAt Only
+router.put('/updateSoldAtProduct/:name', (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+      // name: req.body.name, // Name is in comment because it shoun't be able to get a mod'
+      //image: req.body.image,
+      //stock: req.body.stock,
+      soldAt: JSON.parse(req.body.soldAt),
+      //restockAt: JSON.parse(req.body.restockAt),
+      //categories: req.body.categories,
+    };
+    Product.findOneAndUpdate({name: name}, updatedProduct)
+        .then(() => {
+            Product.findOne({name: name})
+                .populate('categories')
+                .then(product => {
+                    if(product) {
+                        res.json({result: true, product});
+                    } else {
+                        res.json({result: false, error: 'Product not found'});
+                    }
+                })
+                .catch(error => {
+                    if (error.path === 'categories') {
+                        // Si une erreur de peuplement se produit, renvoyez le document non peuplé
+                        Product.findOne({name: name})
+                            .then(product => {
+                                if(product) {
+                                    res.json({result: true, product});
+                                } else {
+                                    res.json({result: false, error: 'Product not found'});
+                                }
+                            })
+                    } else {
+                        res.json({result: false, error});
+                    }
+                });
+        })
+        .catch(error => {
+            res.json({result: false, error});
+        });
+});
+
+//////////////////////////
+//Update restockAt Only
+router.put('/updateRestockAtProduct/:name', (req, res) => {
+    const name = req.params.name;
+    const updatedProduct = {
+      // name: req.body.name, // Name is in comment because it shoun't be able to get a mod'
+      //image: req.body.image,
+      //stock: req.body.stock,
+      //soldAt: JSON.parse(req.body.soldAt),
+      restockAt: JSON.parse(req.body.restockAt),
+      //categories: req.body.categories,
+    };
+    Product.findOneAndUpdate({name: name}, updatedProduct)
+        .then(() => {
+            Product.findOne({name: name})
+                .populate('categories')
+                .then(product => {
+                    if(product) {
+                        res.json({result: true, product});
+                    } else {
+                        res.json({result: false, error: 'Product not found'});
+                    }
+                })
+                .catch(error => {
+                    if (error.path === 'categories') {
+                        // Si une erreur de peuplement se produit, renvoyez le document non peuplé
+                        Product.findOne({name: name})
+                            .then(product => {
+                                if(product) {
+                                    res.json({result: true, product});
+                                } else {
+                                    res.json({result: false, error: 'Product not found'});
+                                }
+                            })
+                    } else {
+                        res.json({result: false, error});
+                    }
+                });
+        })
+        .catch(error => {
+            res.json({result: false, error});
+        });
+});
 
 //////////////////////////
 //Delete route for Product
