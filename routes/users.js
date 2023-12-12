@@ -138,7 +138,7 @@ router.delete("/:email", (req, res) => {
       res.json({ result: false, error: "User not found" });
     } else {
       // delete the user
-      User.deleteOne({ _id: userToDelete._id }).then(() => {
+      User.deleteOne({ email: email }).then(() => {
         res.json({ result: true, message: "User deleted successfully" });
       });
     }
