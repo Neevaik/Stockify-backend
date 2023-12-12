@@ -57,13 +57,13 @@ router.post("/addUser", (req, res) => {
 });
 
 router.put("/updateUser/:id", (req, res) => {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  // permet de verifier le format d'un email comforme
-  if (!emailRegex.test(req.body.email)) {
-    res.json({ result: false, error: "Invalid email format" });
-    return;
-  }
+  // // permet de verifier le format d'un email comforme
+  // if (!emailRegex.test(req.body.email)) {
+  //   res.json({ result: false, error: "Invalid email format" });
+  //   return;
+  // }
 
   const id = req.params.id;
   User.updateOne(
@@ -130,7 +130,7 @@ router.get("/allUser", (req, res) => {
 
 
 router.delete("/:email", (req, res) => {
-  const { username } = req.body;
+ 
   const { email } = req.params;
 
   // retrieve the user to be delete
