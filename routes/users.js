@@ -45,27 +45,18 @@ router.post("/signup", (req, res) => {
 });
 
 router.put("/updateAdmin", (req, res) => {
-  const { token,username } = req.body;
-  
-  User.findOne({token}).then((requestingUser)=>{
-    if(!requestingUser||!requestingUser._id){
-      res.json({ result: false, error: "Unauthorized" });
-    }else{
-      User.updateOne({ username }, { $set: { isAdmin: true } }).then(() => {
-        User.find().then(() => {
-          res.json({
-            result: true,
-            message: "user status:isAdmin update to true ",
-          });
-        });
+  const { token } = req.body;
+
+  User.updateOne({ token }, { $set: { isAdmin: true } }).then(() => {
+    User.find().then((data) => {
+      console.log(data);
+      res.json({
+        result: true,
+        message: "user status:isAdmin update to true ",
       });
-    }
-  })
-
-  
+    });
+  });
 });
-
-
  //Permet de verifier si l'utilsateur existe avant de ce connecter
 router.post("/signin", (req, res) => {
   if (!checkBody(req.body, ["username", "password"])) {
@@ -89,10 +80,10 @@ router.post("/signin", (req, res) => {
 });
 
 router.get("/allUser", (req,res) =>{
-  User.find()
-  .then(data=>{
-    if(data){
-      res.json({data})
+  User.find().then((user)=>{
+    if(user){
+      console.log(user)
+      res.json({result:true })
     }else{
       res.json({result:false, error:'User not found'})
     }
