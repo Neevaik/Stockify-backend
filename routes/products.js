@@ -68,6 +68,8 @@ router.put('/updateProduct/:name', async (req, res) => {
   
     try {
       // Ask findOneAndUpdate to return the updated document
+      // First parameter is the Search's Object / Object who hold new information
+      // new: true specify to send the new version of the doc instead of the original
       const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
       .populate('category');
       if (product) {
@@ -81,7 +83,8 @@ router.put('/updateProduct/:name', async (req, res) => {
   });
 
 //////////////////////////
-// Update Stock Only
+//Update Stock Only
+//Data format number only
 router.put('/updateStockProduct/:name', async (req, res) => {
     const name = req.params.name;
     const updatedProduct = {
@@ -91,21 +94,24 @@ router.put('/updateStockProduct/:name', async (req, res) => {
     };
   
     try {
-      // Ask findOneAndUpdate to return the updated document
-      const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-      .populate('category');
-      if (product) {
-        res.json({ result: true, product });
-      } else {
-        res.json({ result: false, error: 'Product not found' });
-      }
-    } catch (error) {
-      res.json({ result: false, error });
-    }
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+            
+        }
   });
 
 //////////////////////////
 //Update soldAt Only
+//Data format [{"date":"YYYY/MM/DD","quantity":X}]
 router.put('/updateSoldAtProduct/:name', async (req, res) => {
     const name = req.params.name;
     const updatedProduct = {
@@ -115,21 +121,24 @@ router.put('/updateSoldAtProduct/:name', async (req, res) => {
     };
   
     try {
-      // Ask findOneAndUpdate to return the updated document
-      const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-      .populate('category');
-      if (product) {
-        res.json({ result: true, product });
-      } else {
-        res.json({ result: false, error: 'Product not found' });
-      }
-    } catch (error) {
-      res.json({ result: false, error });
-    }
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
   });
 
 //////////////////////////
 //Update restockAt Only
+//Data format [{"date":"YYYY/MM/DD","quantity":X}]
 router.put('/updateRestockAtProduct/:name', async (req, res) => {
     const name = req.params.name;
     const updatedProduct = {
@@ -139,17 +148,19 @@ router.put('/updateRestockAtProduct/:name', async (req, res) => {
     };
   
     try {
-      // Ask findOneAndUpdate to return the updated document
-      const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-      .populate('category');
-      if (product) {
-        res.json({ result: true, product });
-      } else {
-        res.json({ result: false, error: 'Product not found' });
-      }
-    } catch (error) {
-      res.json({ result: false, error });
-    }
+        // Ask findOneAndUpdate to return the updated document
+        // First parameter is the Search's Object / Object who hold new information
+        // new: true specify to send the new version of the doc instead of the original
+        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, product });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
   });
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,16 +170,17 @@ router.delete('/deleteProduct/:name', async (req, res) => {
     const name = req.params.name;
   
     try {
-      const product = await Product.findOneAndDelete({ name: name })
-      .populate('category');
-      if (product) {
-        res.json({ result: true, message: 'Product deleted successfully' });
-      } else {
-        res.json({ result: false, error: 'Product not found' });
-      }
-    } catch (error) {
-      res.json({ result: false, error });
-    }
+        // Ask findOneAndUpdate to return the updated document
+        const product = await Product.findOneAndDelete({ name: name })
+        .populate('category');
+        if (product) {
+            res.json({ result: true, message: 'Product deleted successfully' });
+        } else {
+            res.json({ result: false, error: 'Product not found' });
+        }
+        } catch (error) {
+        res.json({ result: false, error });
+        }
   });
 
 
