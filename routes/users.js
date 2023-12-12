@@ -131,7 +131,7 @@ router.get("/allUser", (req, res) => {
 router.get("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({username}).then((data) => {
-    console.log(data)
+    // console.log(data)
     if (data) {
       res.json({ id:data._id });
     } else {
