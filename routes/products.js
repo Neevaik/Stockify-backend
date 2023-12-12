@@ -6,32 +6,37 @@ const Product = require('../models/products')
 
 //////////////////////
 //Creation new Product
-router.post('/newProduct', (req, res)=> {
-  Product.findOne({name: req.body.name})
-  //Bringing categories
-  .populate('category')
-  .then(data => {
-    
-    //Checking if product already exists
-    if(data === null) {
-        //If not existing = Creation
-        const newProduct = new Product({
-            name: req.body.name,
-            image: req.body.image,
-            stock: req.body.stock,
-            restockAt: JSON.parse(req.body.restockAt),
-            category: req.body.category,
+router.post('/newProduct', (req, res) => {
+    Product.findOne({ name: req.body.name })
+        // Bringing categories
+        .populate('category')
+        .then(data => {
+            // Checking if product already exists
+            if (data === null) {
+                // If not existing = Creation
+
+                const currentDate = new Date();
+
+                const newProduct = new Product({
+                    name: req.body.name,
+                    image: req.body.image,
+                    stock: req.body.stock,
+                    soldAt: [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }],
+                    restockAt: JSON.parse(req.body.restockAt),
+                    category: req.body.category,
+                })
+
+                // Saving of the Product
+                newProduct.save().then(newProduct => {
+                    res.json({ result: true, newProduct })
+                })
+            } else {
+                // Product already exists
+                res.json({ result: false, error: 'Product already exists' })
+            }
         })
-        //Saving of the Product
-        newProduct.save().then(newProduct => {
-            res.json({result: true, newProduct})
-        })
-    }else{
-        //Product already exists
-        res.json({result: false, error: 'Product already exists'})
-    }
-  })
 });
+
 
 ///////////////////////////////////////////////
 //Modification of the Product in fonction of Id
