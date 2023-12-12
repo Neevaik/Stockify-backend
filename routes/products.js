@@ -21,7 +21,9 @@ router.post('/newProduct', (req, res)=> {
             // default to 0 if not provided
             stock: req.body.stock || 0,
             // default to empty array if not provided
-            soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
+            soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
+            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
             // default to empty array if not provided
             restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
             category: req.body.category,
