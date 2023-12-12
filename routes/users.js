@@ -14,6 +14,8 @@ const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 
 
+//deacher un mot de passe
+
 router.post("/addUser", (req, res) => {
   if (!checkBody(req.body, ["storeName", "username", "password", "email"])) {
     res.json({ result: false, error: "Missing or empty fields" });
@@ -89,13 +91,13 @@ router.post("/signin", (req, res) => {
     return;
   }
 
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  // permet de verifier le format d'un email comforme
-  if (!emailRegex.test(req.body.email)) {
-    res.json({ result: false, error: "Invalid email format" });
-    return;
-  }
+  // // permet de verifier le format d'un email comforme
+  // if (!emailRegex.test(req.body.email)) {
+  //   res.json({ result: false, error: "Invalid email format" });
+  //   return;
+  // }
 
   User.findOne({
     username: { $regex: new RegExp(req.body.username, "i") },
@@ -124,8 +126,6 @@ router.get("/allUser", (req, res) => {
     }
   });
 });
-
-
 
 
 router.delete("/:email", (req, res) => {
