@@ -115,4 +115,21 @@ router.get('/', (req, res) => {
     });
 });
 
+
+//////////////////////////////
+//GET name by ID
+router.get('/getId/:name', (req, res) => {
+    const name = req.params.name;
+    Category.findOne({ name: name })
+    .then(data => {
+        if (data) {
+            console.log(data._id)
+            res.json({ result: true, categoryId: data._id });
+        } else {
+            res.json({ result: false, error: 'Category not found' });
+        }
+    });
+});
+
+
 module.exports = router;
