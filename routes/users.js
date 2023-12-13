@@ -103,6 +103,24 @@ router.post("/signin", (req, res) => {
     username: { $regex: new RegExp(req.body.username, "i") },
   }).then((data) => {
     if (bcrypt.compareSync(req.body.password, data.password)) {
+      const decodedToken = jwt.decode(data.token);
+
+
+      const payload = {
+        username: req.body.username,
+        email: req.body.email,
+        createdAt: moment().format("LLLL"),
+        expiresAt: moment().add(5, "minutes").format("LLLL"),
+        // nextRefresh: moment().add(1, "hour").format("LLLL"),
+      };
+
+      const secretKey = uid2(32);
+      const newAccessToken = jwt.sign(payload, secretKey, {
+        algorithm: "HS256",
+      });
+
+      data.token = newAccessToken;
+
       res.json({
         result: true,
         token: data.token,
