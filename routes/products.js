@@ -54,7 +54,7 @@ router.post('/newProduct', (req, res)=> {
 router.put('/updateProduct/:name', async (req, res) => {
 
     // Check if name is provided
-    if (checkBody(req.body.name)) {
+    if (!checkBody(req.body, ["name"])) {
         return res.json({result: false, error: 'Name is required'});
     }
 
@@ -109,7 +109,7 @@ router.put('/updateStockProduct/:name', async (req, res) => {
             res.json({ result: false, error: 'Product not found' });
         }
         } catch (error) {
-            
+            res.json({ result: false, error });
         }
   });
 

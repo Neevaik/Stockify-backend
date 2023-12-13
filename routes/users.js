@@ -66,19 +66,26 @@ router.put("/updateUser/:id", (req, res) => {
   }
 
   const id = req.params.id;
+
   User.updateOne(
     { _id: id },
     {
       isAdmin: req.body.isAdmin,
       username: req.body.username,
       email: req.body.email,
-    }
-  ).then(() => {
-    User.find().then(() => {
-      res.json({
-        result: true,
-        message: "user update  ",
-      });
+    })
+  .then(() => {
+    User.find()
+    .then((data) => {
+      if(data){
+        res.json({
+          result: true,
+          message: "user update  ",
+        });
+      }else{
+        res.json({ result: false, error: 'Product not found' });
+      }
+    
     });
   });
 });
