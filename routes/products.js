@@ -207,7 +207,7 @@ router.get('/', (req, res) => {
         res.json({ result: true, allCategory :[] });
         } else {
         res.json({ result: false, error: 'Product not found' });
-        }
+        } 
     });
 });
 
