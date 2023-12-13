@@ -185,7 +185,9 @@ router.delete('/deleteProduct/:name', async (req, res) => {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 router.get('/allProducts', (req, res) => {
     //GET All Products
-    Product.find().then(data => {
+    Product.find()
+    .populate('category')
+    .then(data => {
         if (data.length > 0) {
             res.json({ result: true, allProducts: data });
         } else {
@@ -307,4 +309,35 @@ router.get('/salesOfTheMonth', (req, res) => {
     });
 });
 
+
+
+
+
+// Route ajout stock
+router.put('/addStock/:name/:stock', (req, res) => {
+    const todayDate = new Date();
+    Product.findOne({name: req.params.name})
+    .then(data => {
+        console.log(data.stock)
+        Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) + parseInt(req.params.stock), $push: { restockAt: {date: todayDate, quantity: req.params.stock}}})
+        .then(() => {
+            Product.find().then(() => { res.json({ result: true, message: "stock added"});
+            });
+        });
+    });
+});
+
+// Route sortie de stock stock
+router.put('/sell/:name/:stock', (req, res) => {
+    const todayDate = new Date();
+    Product.findOne({name: req.params.name})
+    .then(data => {
+        console.log(data.stock)
+        Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) - parseInt(req.params.stock), $push: { soldAt: {date: todayDate, quantity: req.params.stock}}})
+        .then(() => {
+            Product.find().then(() => { res.json({ result: true, message: "stock added"});
+            });
+        });
+    })
+})
 module.exports = router;
