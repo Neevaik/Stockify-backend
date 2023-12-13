@@ -188,11 +188,7 @@ router.delete('/deleteProduct/:name', async (req, res) => {
 //GET All Products
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 router.get('/allProducts', (req, res) => {
-    
     //GET All Products
-    Product.find()
-    .populate('category')
-    .then(data => {
     Product.find()
     .populate('category')
     .then(data => {
