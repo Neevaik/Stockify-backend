@@ -9,40 +9,36 @@ const Product = require('../models/products')
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 //Creation new Product
 router.post('/newProduct', (req, res)=> {
-
-    if (!checkBody(req.body, ["name"])) {
-        return res.json({result: false, error: 'Name is required'});
+  Product.findOne({name: req.body.name})
+  //Bringing categories
+  .populate('category')
+  .then(data => {
+    console.log(data)
+    //Checking if product already exists
+    if(data === null) {
+        //If not existing = Creation
+        const newProduct = new Product({
+            name: req.body.name,
+            image: req.body.image,
+            // default to 0 if not provided
+            stock: req.body.stock,
+            // default to empty array if not provided
+            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
+            // soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
+            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+            // default to empty array if not provided
+            // restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
+            category: req.body.category,
+        })
+        //Saving of the Product
+        newProduct.save().then(newProduct => {
+            res.json({result: true, newProduct})
+        })
+    }else{
+        //Product already exists
+        res.json({result: false, error: 'Product already exists'})
     }
-
-    Product.findOne({name: req.body.name})
-    //Bringing categories
-    .populate('category')
-    .then(data => {
-        
-        //Checking if product already exists
-        if(data === null) {
-            //If not existing = Creation
-            const newProduct = new Product({
-                name: req.body.name,
-                image: req.body.image,
-                // default to 0 if not provided
-                stock: req.body.stock || 0,
-                // default to empty array if not provided
-                //{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }
-                soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
-                // default to empty array if not provided
-                restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
-                category: req.body.category,
-            })
-            //Saving of the Product
-            newProduct.save().then(newProduct => {
-                res.json({result: true, newProduct})
-            })
-        }else{
-            //Product already exists
-            res.json({result: false, error: 'Product already exists'})
-        }
-    })
+  })
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +50,7 @@ router.post('/newProduct', (req, res)=> {
 router.put('/updateProduct/:name', async (req, res) => {
 
     // Check if name is provided
-    if (checkBody(req.body.name)) {
+    if (!checkBody(req.body, ["name"])) {
         return res.json({result: false, error: 'Name is required'});
     }
 
@@ -109,7 +105,7 @@ router.put('/updateStockProduct/:name', async (req, res) => {
             res.json({ result: false, error: 'Product not found' });
         }
         } catch (error) {
-            
+            res.json({ result: false, error });
         }
   });
 
@@ -192,7 +188,6 @@ router.delete('/deleteProduct/:name', async (req, res) => {
 //GET All Products
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 router.get('/allProducts', (req, res) => {
-    
     //GET All Products
     Product.find()
     .populate('category')
@@ -216,7 +211,7 @@ router.get('/', (req, res) => {
         res.json({ result: true, allCategory :[] });
         } else {
         res.json({ result: false, error: 'Product not found' });
-        }
+        } 
     });
 });
 
@@ -318,4 +313,35 @@ router.get('/salesOfTheMonth', (req, res) => {
     });
 });
 
+
+
+
+
+// Route ajout stock
+router.put('/addStock/:name/:stock', (req, res) => {
+    const todayDate = new Date();
+    Product.findOne({name: req.params.name})
+    .then(data => {
+        console.log(data.stock)
+        Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) + parseInt(req.params.stock), $push: { restockAt: {date: todayDate, quantity: req.params.stock}}})
+        .then(() => {
+            Product.find().then(() => { res.json({ result: true, message: "stock added"});
+            });
+        });
+    });
+});
+
+// Route sortie de stock stock
+router.put('/sell/:name/:stock', (req, res) => {
+    const todayDate = new Date();
+    Product.findOne({name: req.params.name})
+    .then(data => {
+        console.log(data.stock)
+        Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) - parseInt(req.params.stock), $push: { soldAt: {date: todayDate, quantity: req.params.stock}}})
+        .then(() => {
+            Product.find().then(() => { res.json({ result: true, message: "stock added"});
+            });
+        });
+    })
+})
 module.exports = router;

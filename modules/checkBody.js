@@ -1,10 +1,12 @@
 function checkBody(body, keys) {
   let isValid = true;
-  const regex = /^\s*$/; // Regex pour vérifier si toute la chaîne est composée d'espaces
 
+  // Regex to check whether the entire string is made up of spaces
+  const regex = /^\s*$/; 
   for (const field of keys) {
     if (body[field]) {
-      body[field] = body[field].replace(/\s+/g, ' ').trim(); // Remplacer les espaces supplémentaires et supprimer les espaces au début et à la fin
+      // Replace extra spaces and delete spaces at the beginning and end
+      body[field] = body[field].replace(/\s+/g, ' ').trim(); 
     }
     if (!body[field] || body[field] === '' || regex.test(body[field])) {
       isValid = false;
