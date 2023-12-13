@@ -4,7 +4,7 @@ function checkBody(body, keys) {
 
   for (const field of keys) {
     if (body[field]) {
-      body[field] = body[field].replace(/\s+/g, ' '); // Remplacer les espaces supplémentaires
+      body[field] = body[field].replace(/\s+/g, ' ').trim(); // Remplacer les espaces supplémentaires et supprimer les espaces au début et à la fin
     }
     if (!body[field] || body[field] === '' || regex.test(body[field])) {
       isValid = false;
