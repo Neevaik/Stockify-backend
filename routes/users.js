@@ -20,7 +20,7 @@ router.post("/addUser", (req, res) => {
 
 
   if (!checkBody(req.body, ["username", "password", "email"])) {
-    res.json({ result: false, error: "Missing or empty fields" });
+    res.json({ result: false, error: "Missing or empty fields " });
     return;
   }
 
@@ -59,6 +59,11 @@ router.post("/addUser", (req, res) => {
 });
 
 router.put("/updateUser/:id", (req, res) => {
+ 
+  if (!checkBody(req.body, ["isAdmin"])) {
+    res.json({ result: false, error: "isAdmin field missing " });
+    return;
+  }
 
   const id = req.params.id;
   User.updateOne(
@@ -132,12 +137,12 @@ router.delete("/:email", (req, res) => {
  
   const { email } = req.params;
 
-  // retrieve the user to be delete
+
   User.findOne({ email }).then((userToDelete) => {
     if (!userToDelete) {
       res.json({ result: false, error: "User not found" });
     } else {
-      // delete the user
+    
       User.deleteOne({ email: email }).then(() => {
         res.json({ result: true, message: "User deleted successfully" });
       });
