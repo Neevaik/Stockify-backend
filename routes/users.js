@@ -13,12 +13,14 @@ const uid2 = require("uid2");
 //hashage du mot de passe ;
 const bcrypt = require("bcrypt");
 
-
-//deacher un mot de passe
+// ajoute un utilisateur dans la base de donnée
 
 router.post("/addUser", (req, res) => {
+
+
+
   if (!checkBody(req.body, ["username", "password", "email"])) {
-    res.json({ result: false, error: "Missing or empty fields" });
+    res.json({ result: false, error: "Missing or empty fields " });
     return;
   }
 
@@ -57,13 +59,11 @@ router.post("/addUser", (req, res) => {
 });
 
 router.put("/updateUser/:id", (req, res) => {
-  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // // permet de verifier le format d'un email comforme
-  // if (!emailRegex.test(req.body.email)) {
-  //   res.json({ result: false, error: "Invalid email format" });
-  //   return;
-  // }
+ 
+  if (!checkBody(req.body, ["isAdmin"])) {
+    res.json({ result: false, error: "isAdmin field missing " });
+    return;
+  }
 
   const id = req.params.id;
   User.updateOne(
@@ -92,13 +92,6 @@ router.post("/signin", (req, res) => {
     return;
   }
 
-  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // // permet de verifier le format d'un email comforme
-  // if (!emailRegex.test(req.body.email)) {
-  //   res.json({ result: false, error: "Invalid email format" });
-  //   return;
-  // }
 
   User.findOne({
     username: { $regex: new RegExp(req.body.username, "i") },
@@ -131,7 +124,6 @@ router.get("/allUser", (req, res) => {
 router.post("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({username}).then((data) => {
-    console.log(data)
     if (data) {
       res.json({ id:data._id });
     } else {
@@ -145,12 +137,12 @@ router.delete("/:email", (req, res) => {
  
   const { email } = req.params;
 
-  // retrieve the user to be delete
+
   User.findOne({ email }).then((userToDelete) => {
     if (!userToDelete) {
       res.json({ result: false, error: "User not found" });
     } else {
-      // delete the user
+    
       User.deleteOne({ email: email }).then(() => {
         res.json({ result: true, message: "User deleted successfully" });
       });
