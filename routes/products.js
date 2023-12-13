@@ -11,7 +11,7 @@ router.post('/newProduct', (req, res)=> {
   //Bringing categories
   .populate('category')
   .then(data => {
-    
+    console.log(data)
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
@@ -19,13 +19,13 @@ router.post('/newProduct', (req, res)=> {
             name: req.body.name,
             image: req.body.image,
             // default to 0 if not provided
-            stock: req.body.stock || 0,
+            stock: req.body.stock,
             // default to empty array if not provided
             // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
-            soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
+            // soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
             //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
             // default to empty array if not provided
-            restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
+            // restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
             category: req.body.category,
         })
         //Saving of the Product
