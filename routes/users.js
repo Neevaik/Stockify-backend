@@ -131,7 +131,7 @@ router.post("/signin", (req, res) => {
         email: req.body.email,
         createdAt: moment().format("LLLL"),
         expiresAt: moment().add(5, "minutes").format("LLLL"),
-        nextRefresh: moment().add(1, "hour").format("LLLL"),
+        // nextRefresh: moment().add(1, "hour").format("LLLL"),
       };
 
       const secretKey = uid2(32);
