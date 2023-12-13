@@ -1,42 +1,48 @@
 var express = require('express');
 var router = express.Router();
 
+const { checkBody } = require("../modules/checkBody");
+
 //Require Product from Models
 const Product = require('../models/products')
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 //Creation new Product
 router.post('/newProduct', (req, res)=> {
-  Product.findOne({name: req.body.name})
-  //Bringing categories
-  .populate('category')
-  .then(data => {
-    
-    //Checking if product already exists
-    if(data === null) {
-        //If not existing = Creation
-        const newProduct = new Product({
-            name: req.body.name,
-            image: req.body.image,
-            // default to 0 if not provided
-            stock: req.body.stock || 0,
-            // default to empty array if not provided
-            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
-            soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
-            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
-            // default to empty array if not provided
-            restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
-            category: req.body.category,
-        })
-        //Saving of the Product
-        newProduct.save().then(newProduct => {
-            res.json({result: true, newProduct})
-        })
-    }else{
-        //Product already exists
-        res.json({result: false, error: 'Product already exists'})
+
+    if (!checkBody(req.body, ["name"])) {
+        return res.json({result: false, error: 'Name is required'});
     }
-  })
+
+    Product.findOne({name: req.body.name})
+    //Bringing categories
+    .populate('category')
+    .then(data => {
+        
+        //Checking if product already exists
+        if(data === null) {
+            //If not existing = Creation
+            const newProduct = new Product({
+                name: req.body.name,
+                image: req.body.image,
+                // default to 0 if not provided
+                stock: req.body.stock || 0,
+                // default to empty array if not provided
+                //{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }
+                soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
+                // default to empty array if not provided
+                restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
+                category: req.body.category,
+            })
+            //Saving of the Product
+            newProduct.save().then(newProduct => {
+                res.json({result: true, newProduct})
+            })
+        }else{
+            //Product already exists
+            res.json({result: false, error: 'Product already exists'})
+        }
+    })
 });
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,9 +54,11 @@ router.post('/newProduct', (req, res)=> {
 router.put('/updateProduct/:name', async (req, res) => {
 
     // Check if name is provided
-    if (!req.body.name) {
+    if (checkBody(req.body.name)) {
         return res.json({result: false, error: 'Name is required'});
     }
+
+    //Regex // ou checkbody
 
     const name = req.params.name;
     const updatedProduct = {
@@ -184,8 +192,11 @@ router.delete('/deleteProduct/:name', async (req, res) => {
 //GET All Products
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 router.get('/allProducts', (req, res) => {
+    
     //GET All Products
-    Product.find().then(data => {
+    Product.find()
+    .populate('category')
+    .then(data => {
         if (data.length > 0) {
             res.json({ result: true, allProducts: data });
         } else {
@@ -283,7 +294,7 @@ router.get('/salesOfTheMonth', (req, res) => {
     today.setHours(0, 0, 0, 0);
     //Get the date 30 days later
     let month = new Date(today);
-    month.setDate(month.getDate() + 7);
+    month.setDate(month.getDate() + 30);
 
     Product.aggregate([
         //$unwind go in object array of soldAt
