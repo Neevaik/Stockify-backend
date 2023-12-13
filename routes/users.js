@@ -6,6 +6,11 @@ const User = require("../models/users");
 
 const { checkBody } = require("../modules/checkBody");
 
+
+const jwt = require("jsonwebtoken");
+
+const moment = require("moment");
+
 // creation d 'un token unique par utilisateur;
 const uid2 = require("uid2");
 
@@ -13,7 +18,8 @@ const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 
 
-//deacher un mot de passe
+const secretKey = uid2(32);
+
 
 router.post("/addUser", (req, res) => {
   if (!checkBody(req.body, ["username", "password", "email"])) {
@@ -22,6 +28,13 @@ router.post("/addUser", (req, res) => {
   }
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  const payload = {
+    createdAt: moment().format("LLLL"),
+    expiresAt: moment().add(5, "minutes").format("LLLL"), // 5 min plus tard
+  };
+ 
+  const token = jwt.sign(payload, secretKey, { algorithm: "HS256" });
 
   // permet de verifier le format d'un email comforme
   if (!emailRegex.test(req.body.email)) {
@@ -39,14 +52,18 @@ router.post("/addUser", (req, res) => {
         storeName: req.body.storeName,
         username: req.body.username,
         email: req.body.email,
-        token: uid2(32),
+        token: token,
         password: hash,
         isAdmin: req.body.isAdmin,
       });
 
       // Save the new user to the database
       newUser.save().then((data) => {
-        res.json({ result: true, token: data.token });
+        res.json({   
+          result: true,
+          token: data.token,
+          payload: payload,
+        });
       });
     } else {
       // If the user already exists, return an error
@@ -91,42 +108,47 @@ router.post("/signin", (req, res) => {
     return;
   }
 
-  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // // permet de verifier le format d'un email comforme
-  // if (!emailRegex.test(req.body.email)) {
-  //   res.json({ result: false, error: "Invalid email format" });
-  //   return;
-  // }
-
   User.findOne({
     username: { $regex: new RegExp(req.body.username, "i") },
   }).then((data) => {
     if (bcrypt.compareSync(req.body.password, data.password)) {
       const decodedToken = jwt.decode(data.token);
+      
 
+      if (decodedToken && moment().isBefore(decodedToken.exp)) {
+        // Le token actuel n'est pas expiré, renvoyez-le tel quel
+        res.json({
+          result: true,
+          token: data.token,
+          username: data.username,
+          storeName: data.storeName,
+        });
+      } else {
+        // Le token actuel est expiré, générez un nouveau
+        const payload = {
+          username: req.body.username,
+          email: req.body.email,
+          createdAt: moment().format("LLLL"),
+          expiresAt: moment().add(5, "minutes").format("LLLL"),
+        };
 
-      const payload = {
-        username: req.body.username,
-        email: req.body.email,
-        createdAt: moment().format("LLLL"),
-        expiresAt: moment().add(5, "minutes").format("LLLL"),
-        // nextRefresh: moment().add(1, "hour").format("LLLL"),
-      };
+        
+        const newAccessToken = jwt.sign(payload, secretKey, {
+          algorithm: "HS256",
+        });
 
-      const secretKey = uid2(32);
-      const newAccessToken = jwt.sign(payload, secretKey, {
-        algorithm: "HS256",
-      });
-
-      data.token = newAccessToken;
-
-      res.json({
-        result: true,
-        token: data.token,
-        username: data.username,
-        storeName: data.storeName,
-      });
+        // Mise a jour du token dans la data base
+        data.token = newAccessToken;
+        data.save().then((data) => {
+          res.json({
+            result: true,
+            payload:payload,
+            token: newAccessToken,
+            username: data.username,
+            storeName: data.storeName,
+          });
+        });
+      }
     } else {
       res.json({ result: false, error: "User not found or wrong password" });
     }
