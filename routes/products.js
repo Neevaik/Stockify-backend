@@ -67,7 +67,7 @@ router.put('/updateProduct/:name', async (req, res) => {
       //stock: req.body.stock,
       //soldAt: JSON.parse(req.body.soldAt),
       //restockAt: JSON.parse(req.body.restockAt),
-      categories: req.body.categories,
+      category: req.body.category,
     };
   
     try {
