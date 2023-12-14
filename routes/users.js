@@ -49,7 +49,7 @@ router.post("/addUser", (req, res) => {
       const hash = bcrypt.hashSync(req.body.password, 10);
 
       const newUser = new User({
-        storeName: req.body.storeName,
+        storeName: "NoStoreName",
         username: req.body.username,
         email: req.body.email,
         token: token,
