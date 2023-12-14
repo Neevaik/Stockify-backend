@@ -19,8 +19,8 @@ router.post('/newCategory', (req, res)=> {
               name: req.body.name,
               image: req.body.image,
           })
-          // Saving of the Category
-          newCategory.save().then(newCategory => {
+            // Saving of the Category
+            newCategory.save().then(newCategory => {
               res.json({result: true, newCategory})
           })
       }else{
@@ -61,19 +61,20 @@ router.put('/updateCategory/:name', (req, res) => {
 //Delete route for Category
 router.delete('/deleteCategory/:name', async (req, res) => {
     const name = req.params.name;
+    const defaultCategoryID = "657ab87025ea6d64cea475e6"; // ID de la catégorie par défaut
 
     try {
-        // Find the category first by name
+        // Trouver la catégorie d'abord par son nom
         const category = await Category.findOne({ name: name });
         if(category) {
-            // Update products with the foreign key
+            // Mettre à jour les produits avec la clé étrangère
             const result = await Product.updateMany(
-                { category: category._id }, // find products with the category id
-                { $pull: { category: category._id } } // remove the category id from the array
+                { category: category._id }, // trouver les produits avec l'ID de la catégorie
+                { $pull: { category: category._id }, $addToSet: { category: defaultCategoryID } } // retirer l'ID de la catégorie du tableau et ajouter l'ID de la catégorie par défaut
             );
 
             if (result) {
-                // Delete the category after updating the products
+                // Supprimer la catégorie après avoir mis à jour les produits
                 await Category.findByIdAndDelete(category._id);
                 res.json({result: true, message: 'Category and related products updated successfully'});
             } else {
@@ -86,6 +87,7 @@ router.delete('/deleteCategory/:name', async (req, res) => {
         res.json({result: false, error});
     }
 });
+
 
 
 //////////////////////////////
