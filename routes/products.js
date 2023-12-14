@@ -50,7 +50,7 @@ router.post('/newProduct', (req, res)=> {
 router.put('/updateProduct/:name', async (req, res) => {
 
     // Check if name is provided
-    if (!checkBody(req.body, ["name"])) {
+    if (!req.params.name) {
         return res.json({result: false, error: 'Name is required'});
     }
 
@@ -336,12 +336,26 @@ router.put('/sell/:name/:stock', (req, res) => {
     const todayDate = new Date();
     Product.findOne({name: req.params.name})
     .then(data => {
-        console.log(data.stock)
         Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) - parseInt(req.params.stock), $push: { soldAt: {date: todayDate, quantity: req.params.stock}}})
         .then(() => {
             Product.find().then(() => { res.json({ result: true, message: "stock added"});
             });
         });
     })
-})
+});
+
+
+// Route update d'un produit
+router.put('/updateMyProduct/:name', (req, res) => {
+    Product.findOne({name: req.params.name})
+    .then(data => {
+        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category})
+        .then(() => {
+            Product.find().then(() => { res.json({ result: true, message: "product updated"});
+            });
+        });
+    })
+});
+
+
 module.exports = router;
