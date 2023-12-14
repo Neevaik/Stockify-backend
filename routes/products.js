@@ -8,6 +8,10 @@ const Product = require('../models/products')
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 //Creation new Product
+// Default category ID
+const defaultCategoryId = "657ab87025ea6d64cea475e6";
+
+//Creation new Product
 router.post('/newProduct', (req, res)=> {
   Product.findOne({name: req.body.name})
   //Bringing categories
@@ -29,7 +33,7 @@ router.post('/newProduct', (req, res)=> {
             //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
             // default to empty array if not provided
             // restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
-            category: req.body.category,
+            category: req.body.category || defaultCategoryId, // default category if not provided
         })
         //Saving of the Product
         newProduct.save().then(newProduct => {
@@ -64,7 +68,7 @@ router.put('/updateProduct/:name', async (req, res) => {
       //stock: req.body.stock,
       //soldAt: JSON.parse(req.body.soldAt),
       //restockAt: JSON.parse(req.body.restockAt),
-      categories: req.body.categories,
+      category: req.body.category,
     };
   
     try {
