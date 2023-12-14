@@ -56,14 +56,7 @@ router.post("/addUser", (req, res) => {
 });
 
 router.put("/updateUser/:id", (req, res) => {
-  // const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // // permet de verifier le format d'un email comforme
-  // if (!emailRegex.test(req.body.email)) {
-  //   res.json({ result: false, error: "Invalid email format" });
-  //   return;
-  // }
-
+  
   const id = req.params.id;
   User.updateOne(
     { _id: id },

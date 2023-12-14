@@ -22,6 +22,7 @@ router.post('/newProduct', (req, res)=> {
             image: req.body.image,
             // default to 0 if not provided
             stock: req.body.stock,
+            price: req.body.price,
             // default to empty array if not provided
             // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
             // soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
@@ -349,12 +350,27 @@ router.put('/sell/:name/:stock', (req, res) => {
 router.put('/updateMyProduct/:name', (req, res) => {
     Product.findOne({name: req.params.name})
     .then(data => {
-        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category})
+        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price})
         .then(() => {
-            Product.find().then(() => { res.json({ result: true, message: "product updated"});
+            Product.find().then(() => { res.json({ result: true, updatedProduct: data});
             });
         });
     })
+});
+
+
+// Route qui retourne tous les produits d'une category
+router.post('/productsByCategoryId', (req, res) => {
+    Product.find({category: req.body.categoryId})
+    .then(data => {
+        console.log(req.body.categoryId)
+        console.log(data)
+        if (data.length > 0) {
+            res.json({ result: true, allProducts: data });
+        } else {
+            res.json({ result: false, error: 'No Products found' });
+        }
+    });
 });
 
 
