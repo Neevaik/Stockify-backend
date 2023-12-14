@@ -68,12 +68,17 @@ router.delete('/deleteCategory/:name', async (req, res) => {
         const category = await Category.findOne({ name: name });
         if(category) {
             // Mettre à jour les produits avec la clé étrangère
-            const result = await Product.updateMany(
+            const pullResult = await Product.updateMany(
                 { category: category._id }, // trouver les produits avec l'ID de la catégorie
-                { $pull: { category: category._id }, $addToSet: { category: defaultCategoryID } } // retirer l'ID de la catégorie du tableau et ajouter l'ID de la catégorie par défaut
+                { $pull: { category: category._id } } // retirer l'ID de la catégorie du tableau
             );
 
-            if (result) {
+            const addToSetResult = await Product.updateMany(
+                { category: category._id }, // trouver les produits avec l'ID de la catégorie
+                { $addToSet: { category: defaultCategoryID } } // ajouter l'ID de la catégorie par défaut
+            );
+
+            if (pullResult && addToSetResult) {
                 // Supprimer la catégorie après avoir mis à jour les produits
                 await Category.findByIdAndDelete(category._id);
                 res.json({result: true, message: 'Category and related products updated successfully'});
@@ -87,6 +92,8 @@ router.delete('/deleteCategory/:name', async (req, res) => {
         res.json({result: false, error});
     }
 });
+
+
 
 
 
