@@ -360,7 +360,7 @@ router.put('/sell/:name/:stock', (req, res) => {
 router.put('/updateMyProduct/:name', (req, res) => {
     Product.findOne({name: req.params.name})
     .then(data => {
-        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price})
+        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price, stock: req.body.stock})
         .then(() => {
             Product.find().then(() => { res.json({ result: true, updatedProduct: data});
             });
