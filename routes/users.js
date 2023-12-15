@@ -105,50 +105,57 @@ router.post("/signin", (req, res) => {
     username: { $regex: new RegExp(req.body.username, "i") },
   })
   .then((data) => {
-    if (bcrypt.compareSync(req.body.password, data.password)) {
-      const decodedToken = jwt.decode(data.token);
+    if (data) {
+      // L'utilisateur a été trouvé
+      if (bcrypt.compareSync(req.body.password, data.password)) {
+        const decodedToken = jwt.decode(data.token);
 
-      if (decodedToken && moment().isBefore(decodedToken.exp)) {
-        // Le token actuel n'est pas expiré, renvoyez-le tel quel
-        res.json({
-          result: true,
-          token: data.token,
-          username: data.username,
-          storeName: data.storeName,
-        });
-      } 
-      else {
-        // Le token actuel est expiré, générez un nouveau
-        const payload = {
-          username: req.body.username,
-          email: req.body.email,
-          createdAt: moment().format("LLLL"),
-          expiresAt: moment().add(5, "minutes").format("LLLL"),
-        };
-
-        const newAccessToken = jwt.sign(payload, secretKey, {
-          algorithm: "HS256",
-        });
-        // Mise a jour du token dans la data base
-        data.token = newAccessToken;
-        data.save().then((data) => {
+        if (decodedToken && moment().isBefore(decodedToken.exp)) {
+          // Le token actuel n'est pas expiré, renvoyez-le tel quel
           res.json({
             result: true,
-            payload: payload,
-            token: newAccessToken,
+            token: data.token,
             username: data.username,
             storeName: data.storeName,
-            isAdmin: data.isAdmin,
           });
-        });
+        } else {
+          // Le token actuel est expiré, générez un nouveau
+          const payload = {
+            username: req.body.username,
+            email: req.body.email || "", // Ajout d'une valeur par défaut pour le champ email
+            createdAt: moment().format("LLLL"),
+            expiresAt: moment().add(5, "minutes").format("LLLL"),
+          };
+
+          const newAccessToken = jwt.sign(payload, secretKey, {
+            algorithm: "HS256",
+          });
+          data.token = newAccessToken;
+          data.save().then((data) => {
+            res.json({
+              result: true,
+              payload: payload,
+              token: newAccessToken,
+              username: data.username,
+              storeName: data.storeName,
+              isAdmin: data.isAdmin,
+            });
+          });
+        }
+      } else {
+        // Mot de passe incorrect
+        res.json({ result: false, error: "User not found or wrong password" });
       }
+    } else {
+      // Aucun utilisateur trouvé
+      res.json({ result: false, error: "User not found" });
     }
-    else {
-      res.json({ result: false, error: "User not found or wrong password" });
-    }
+  })
+  .catch((error) => {
+    console.error("Error finding user:", error); // Log l'erreur pour le débogage
+    res.json({ result: false, error: "Error finding user" });
   });
 });
-
 
 // affiche tout les utilisateur
 router.get("/allUser", (req, res) => {
