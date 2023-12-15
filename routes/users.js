@@ -106,12 +106,10 @@ router.post("/signin", (req, res) => {
   })
   .then((data) => {
     if (data) {
-      // L'utilisateur a été trouvé
       if (bcrypt.compareSync(req.body.password, data.password)) {
         const decodedToken = jwt.decode(data.token);
 
         if (decodedToken && moment().isBefore(decodedToken.exp)) {
-          // Le token actuel n'est pas expiré, renvoyez-le tel quel
           res.json({
             result: true,
             token: data.token,
@@ -119,10 +117,9 @@ router.post("/signin", (req, res) => {
             storeName: data.storeName,
           });
         } else {
-          // Le token actuel est expiré, générez un nouveau
           const payload = {
             username: req.body.username,
-            email: req.body.email || "", // Ajout d'une valeur par défaut pour le champ email
+            email: req.body.email || "",
             createdAt: moment().format("LLLL"),
             expiresAt: moment().add(5, "minutes").format("LLLL"),
           };
@@ -143,16 +140,14 @@ router.post("/signin", (req, res) => {
           });
         }
       } else {
-        // Mot de passe incorrect
         res.json({ result: false, error: "User not found or wrong password" });
       }
     } else {
-      // Aucun utilisateur trouvé
       res.json({ result: false, error: "User not found" });
     }
   })
   .catch((error) => {
-    console.error("Error finding user:", error); // Log l'erreur pour le débogage
+    console.error("Error finding user:", error);
     res.json({ result: false, error: "Error finding user" });
   });
 });
