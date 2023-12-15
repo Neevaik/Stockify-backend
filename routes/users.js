@@ -139,6 +139,7 @@ router.post("/signin", (req, res) => {
             token: newAccessToken,
             username: data.username,
             storeName: data.storeName,
+            isAdmin:data.isAdmin,
           });
         });
       }
