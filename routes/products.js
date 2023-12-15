@@ -1,6 +1,11 @@
 var express = require('express');
 var router = express.Router();
 
+require('dotenv').config();
+const cloudinary = require('cloudinary').v2;
+const uniqid = require('uniqid');
+const fs = require('fs');
+
 const { checkBody } = require("../modules/checkBody");
 
 //Require Product from Models
@@ -21,6 +26,7 @@ router.post('/newProduct', (req, res)=> {
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
+        
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
@@ -376,6 +382,46 @@ router.post('/productsByCategoryId', (req, res) => {
         }
     });
 });
+
+
+// Route pour gérer l'upload de fichier photo via Cloudinary
+
+  router.post('/newProductWithImage', async (req, res) => {
+    try {
+      const existingProduct = await Product.findOne({ name: req.body.name }).populate('category');
+  
+      if (existingProduct === null) {
+        const photoPath = `./tmp/${uniqid()}.jpg`;
+        const resultMove = await req.files.photoFromFront.mv(photoPath);
+  
+        if (!resultMove) {
+          const resultCloudinary = await cloudinary.uploader.upload(photoPath);
+  
+          const newProduct = new Product({
+            name: req.body.name,
+            image: resultCloudinary.secure_url,
+            stock: req.body.stock || 0,
+            price: req.body.price,
+            category: req.body.category || defaultCategoryId,
+          });
+  
+          const savedProduct = await newProduct.save();
+  
+          res.json({ result: true, url: resultCloudinary.secure_url });
+        } else {
+          res.json({ result: false, error: resultMove });
+        }
+  
+        fs.unlinkSync(photoPath);
+      } else {
+        res.json({ result: false, error: 'Product already exists' });
+      }
+    } catch (error) {
+      console.error('Error during newProduct creation:', error);
+      res.json({ result: false, error: 'An error occurred during newProduct creation' });
+    }
+  });
+  
 
 
 module.exports = router;
