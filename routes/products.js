@@ -351,7 +351,7 @@ router.put('/sell/:name/:stock', (req, res) => {
         .then(() => {
             Product.find().then(() => { res.json({ result: true, message: "stock added"});
             });
-        });
+        }); 
     })
 });
 
