@@ -19,26 +19,21 @@ const defaultCategoryId = "657ab87025ea6d64cea475e6";
 //Creation new Product
 router.post('/newProduct', (req, res)=> {
   Product.findOne({name: req.body.name})
-  //Bringing categories
   .populate('category')
   .then(data => {
-    console.log(data)
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
-        
+        if (!checkBody(req.body, ["name", "stock", "price"])) {
+            res.json({ result: false, error: "Missing or empty fields" });
+            return;
+        }       
+
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
-            // default to 0 if not provided
             stock: req.body.stock,
             price: req.body.price,
-            // default to empty array if not provided
-            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
-            // soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
-            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
-            // default to empty array if not provided
-            // restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
             category: req.body.category || defaultCategoryId, // default category if not provided
         })
         //Saving of the Product
@@ -358,6 +353,12 @@ router.put('/sell/:name/:stock', (req, res) => {
 
 // Route update d'un produit
 router.put('/updateMyProduct/:name', (req, res) => {
+
+    if (!checkBody(req.body, ["name", "stock", "price"])) {
+        res.json({ result: false, error: "Missing or empty fields" });
+        return;
+    }  
+    
     Product.findOne({name: req.params.name})
     .then(data => {
         Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price, stock: req.body.stock})
