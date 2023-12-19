@@ -328,7 +328,6 @@ router.put('/addStock/:name/:stock', (req, res) => {
     const todayDate = new Date();
     Product.findOne({name: req.params.name})
     .then(data => {
-        console.log(data.stock)
         Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) + parseInt(req.params.stock), $push: { restockAt: {date: todayDate, quantity: req.params.stock}}})
         .then(() => {
             Product.find().then(() => { res.json({ result: true, message: "stock added"});
