@@ -34,7 +34,7 @@ router.post("/addUser", (req, res) => {
     createdAt: moment().format("LLLL"),
     expiresAt: moment().add(5, "minutes").format("LLLL"), // 5 min plus tard
   };
- 
+
   const token = jwt.sign(payload, secretKey, { algorithm: "HS256" });
 
   // permet de verifier le format d'un email comforme
@@ -60,7 +60,7 @@ router.post("/addUser", (req, res) => {
 
       // Save the new user to the database
       newUser.save().then((data) => {
-        res.json({   
+        res.json({
           result: true,
           token: data.token,
           payload: payload,
@@ -74,7 +74,7 @@ router.post("/addUser", (req, res) => {
 });
 
 router.put("/updateUser/:id", (req, res) => {
-  
+
   const id = req.params.id;
   User.updateOne(
     { _id: id },
@@ -104,51 +104,54 @@ router.post("/signin", (req, res) => {
 
   User.findOne({
     username: { $regex: new RegExp(req.body.username, "i") },
-  }).then((data) => {
-    if (bcrypt.compareSync(req.body.password, data.password)) {
-      const decodedToken = jwt.decode(data.token);
-      
+  })
+  .then((data) => {
+    if (data) {
+      if (bcrypt.compareSync(req.body.password, data.password)) {
+        const decodedToken = jwt.decode(data.token);
 
-      if (decodedToken && moment().isBefore(decodedToken.exp)) {
-        // Le token actuel n'est pas expiré, renvoyez-le tel quel
-        res.json({
-          result: true,
-          token: data.token,
-          username: data.username,
-          storeName: data.storeName,
-        });
-      } else {
-        // Le token actuel est expiré, générez un nouveau
-        const payload = {
-          username: req.body.username,
-          email: req.body.email,
-          createdAt: moment().format("LLLL"),
-          expiresAt: moment().add(5, "minutes").format("LLLL"),
-        };
-
-        
-        const newAccessToken = jwt.sign(payload, secretKey, {
-          algorithm: "HS256",
-        });
-
-        // Mise a jour du token dans la data base
-        data.token = newAccessToken;
-        data.save().then((data) => {
+        if (decodedToken && moment().isBefore(decodedToken.exp)) {
           res.json({
             result: true,
-            payload:payload,
-            token: newAccessToken,
+            token: data.token,
             username: data.username,
             storeName: data.storeName,
           });
-        });
+        } else {
+          const payload = {
+            username: req.body.username,
+            email: req.body.email || "",
+            createdAt: moment().format("LLLL"),
+            expiresAt: moment().add(5, "minutes").format("LLLL"),
+          };
+
+          const newAccessToken = jwt.sign(payload, secretKey, {
+            algorithm: "HS256",
+          });
+          data.token = newAccessToken;
+          data.save().then((data) => {
+            res.json({
+              result: true,
+              payload: payload,
+              token: newAccessToken,
+              username: data.username,
+              storeName: data.storeName,
+              isAdmin: data.isAdmin,
+            });
+          });
+        }
+      } else {
+        res.json({ result: false, error: "User not found or wrong password" });
       }
     } else {
-      res.json({ result: false, error: "User not found or wrong password" });
+      res.json({ result: false, error: "User not found" });
     }
+  })
+  .catch((error) => {
+    console.error("Error finding user:", error);
+    res.json({ result: false, error: "Error finding user" });
   });
 });
-
 
 // affiche tout les utilisateur
 router.get("/allUser", (req, res) => {
@@ -163,10 +166,10 @@ router.get("/allUser", (req, res) => {
 
 router.post("/user", (req, res) => {
   const { username } = req.body;
-  User.findOne({username}).then((data) => {
+  User.findOne({ username }).then((data) => {
     console.log(data)
     if (data) {
-      res.json({ id:data._id });
+      res.json({ id: data._id });
     } else {
       res.json({ result: false, error: "User not found" });
     }
@@ -175,7 +178,7 @@ router.post("/user", (req, res) => {
 
 
 router.delete("/:email", (req, res) => {
- 
+
   const { email } = req.params;
 
   // retrieve the user to be delete

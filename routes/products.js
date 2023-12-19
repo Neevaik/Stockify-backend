@@ -1,6 +1,11 @@
 var express = require('express');
 var router = express.Router();
 
+require('dotenv').config();
+const cloudinary = require('cloudinary').v2;
+const uniqid = require('uniqid');
+const fs = require('fs');
+
 const { checkBody } = require("../modules/checkBody");
 
 //Require Product from Models
@@ -14,25 +19,21 @@ const defaultCategoryId = "657ab87025ea6d64cea475e6";
 //Creation new Product
 router.post('/newProduct', (req, res)=> {
   Product.findOne({name: req.body.name})
-  //Bringing categories
   .populate('category')
   .then(data => {
-    console.log(data)
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
+        if (!checkBody(req.body, ["name", "stock", "price"])) {
+            res.json({ result: false, error: "Missing or empty fields" });
+            return;
+        }       
+
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
-            // default to 0 if not provided
             stock: req.body.stock,
             price: req.body.price,
-            // default to empty array if not provided
-            // [{ date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity }]
-            // soldAt: req.body.soldAt ? { date: currentDate, quantity: JSON.parse(req.body.soldAt).quantity } : [],
-            //soldAt: req.body.soldAt ? JSON.parse(req.body.soldAt) : [],
-            // default to empty array if not provided
-            // restockAt: req.body.restockAt ? JSON.parse(req.body.restockAt) : [], 
             category: req.body.category || defaultCategoryId, // default category if not provided
         })
         //Saving of the Product
@@ -352,9 +353,15 @@ router.put('/sell/:name/:stock', (req, res) => {
 
 // Route update d'un produit
 router.put('/updateMyProduct/:name', (req, res) => {
+
+    if (!checkBody(req.body, ["name", "stock", "price"])) {
+        res.json({ result: false, error: "Missing or empty fields" });
+        return;
+    }  
+    
     Product.findOne({name: req.params.name})
     .then(data => {
-        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price})
+        Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price, stock: req.body.stock})
         .then(() => {
             Product.find().then(() => { res.json({ result: true, updatedProduct: data});
             });
@@ -376,6 +383,48 @@ router.post('/productsByCategoryId', (req, res) => {
         }
     });
 });
+
+
+// Route pour gérer l'upload de fichier photo via Cloudinary
+
+  router.post('/newProductWithImage', async (req, res) => {
+    try {
+      const existingProduct = await Product.findOne({ name: req.body.name }).populate('category');
+  
+      if (existingProduct === null) {
+        const photoPath = `./tmp/${uniqid()}.jpg`;
+        const resultMove = await req.files.photoFromFront.mv(photoPath);
+  
+        if (!resultMove) {
+          const resultCloudinary = await cloudinary.uploader.upload(photoPath);
+  
+          const newProduct = new Product({
+            name: req.body.name,
+            image: resultCloudinary.secure_url,
+            stock: req.body.stock || 0,
+            price: req.body.price,
+            category: req.body.category || defaultCategoryId,
+          });
+  
+          const savedProduct = await newProduct.save();
+  
+          res.json({ result: true, url: resultCloudinary.secure_url });
+        } else {
+          res.json({ result: false, error: resultMove });
+        }
+  
+        fs.unlinkSync(photoPath);
+      } else {
+        res.json({ result: false, error: 'Product already exists' });
+      }
+    } catch (error) {
+      console.error('Error during newProduct creation:', error);
+      res.json({ result: false, error: 'An error occurred during newProduct creation' });
+    }
+  });
+  
+
+
 
 
 module.exports = router;
