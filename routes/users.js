@@ -106,6 +106,7 @@ router.post("/signin", (req, res) => {
     username: { $regex: new RegExp(req.body.username, "i") },
   })
   .then((data) => {
+    console.log(bcrypt.compareSync(req.body.password, data.password))
     if (data) {
       if (bcrypt.compareSync(req.body.password, data.password)) {
         const decodedToken = jwt.decode(data.token);
@@ -167,7 +168,7 @@ router.get("/allUser", (req, res) => {
 router.post("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({ username }).then((data) => {
-    console.log(data)
+    
     if (data) {
       res.json({ id: data._id });
     } else {
@@ -194,7 +195,7 @@ router.delete("/:email", (req, res) => {
   });
 });
 
-console.log(process.env.SECRET_PASS)
+
 const transporter = nodemailer.createTransport({
   service: "Gmail", 
   auth: {    
@@ -279,16 +280,6 @@ router.post("/resetPassword", (req, res) => {
 });
 
 
-
-router.post('/newUser',(req,res) => {
-  const {token,newPassword} = req.body;
-  User.findOne({token})
-  .then(data => {
-    data.password = bcrypt.hashSync(newPassword, 10);
-    data.save()
-    res.json({data})
-  })
-})
 
 
 module.exports = router;
