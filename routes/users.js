@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
 
 router.post("/addUser", async(req, res) => {
 
-  const requireBody = ["username", "password", "email","isAdmin"];
+  const requireBody = ["username", "password", "email"];
   const { email, username, password, isAdmin } = req.body;
 
   if (!checkBody(req.body, requireBody)) {
