@@ -1,174 +1,147 @@
+//#region imports
 var express = require("express");
 var router = express.Router();
+
 require("../models/connection");
 
 const User = require("../models/users");
 
 const { checkBody } = require("../modules/checkBody");
 
-
 const jwt = require("jsonwebtoken");
+const uid2 = require("uid2");
 
 const moment = require("moment");
 
-// creation d 'un token unique par utilisateur;
-const uid2 = require("uid2");
-
-//hashage du mot de passe ;
 const bcrypt = require("bcrypt");
 
 const nodemailer = require("nodemailer");
-
 const secretKey = uid2(32);
+//#endregion
 
 
-router.post("/addUser", (req, res) => {
-  if (!checkBody(req.body, ["username", "password", "email"])) {
-    res.json({ result: false, error: "Missing or empty fields" });
-    return;
+// sendMail
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: "stockstockify@gmail.com",
+    pass: process.env.SECRET_PASS,
+  },
+});
+
+//#region post method
+
+router.post("/addUser", async(req, res) => {
+
+  const requireBody = ["username", "password", "email","isAdmin"];
+  const { email, username, password, isAdmin } = req.body;
+
+  if (!checkBody(req.body, requireBody)) {
+    return res.json({ result: false, error: "Missing or empty fields" });
   }
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  const payload = {
-    createdAt: moment().format("LLLL"),
-    expiresAt: moment().add(5, "minutes").format("LLLL"), // 5 min plus tard
-  };
-
-  const token = jwt.sign(payload, secretKey, { algorithm: "HS256" });
-
-  // permet de verifier le format d'un email comforme
-  if (!emailRegex.test(req.body.email)) {
-    res.json({ result: false, error: "Invalid email format" });
-    return;
+  if (!emailRegex.test(email)) {
+    return res.json({ result: false, error: "Invalid email format" });
   }
 
-  // Check if the user with the specified email already exists
-  User.findOne({ email: req.body.email }).then((data) => {
-    if (data === null) {
-      // If the user doesn't exist, hash the password and create a new user
-      const hash = bcrypt.hashSync(req.body.password, 10);
-
-      const newUser = new User({
-        storeName: "NoStoreName",
-        username: req.body.username,
-        email: req.body.email,
-        token: token,
-        password: hash,
-        isAdmin: req.body.isAdmin,
-      });
-
-      // Save the new user to the database
-      newUser.save().then((data) => {
-        res.json({
-          result: true,
-          token: data.token,
-          payload: payload,
-        });
-      });
-    } else {
-      // If the user already exists, return an error
-      res.json({ result: false, error: "User already exists" });
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.json({ result: false, error: "User already exists" });
     }
-  });
-});
 
-router.put("/updateUser/:id", (req, res) => {
+    const payload = {
+      createdAt: moment().format("LLLL"),
+      expiresAt: moment().add(5, "minutes").format("LLLL"),
+    };
 
-  const id = req.params.id;
-  User.updateOne(
-    { _id: id },
-    {
-      isAdmin: req.body.isAdmin,
-      username: req.body.username,
-      email: req.body.email,
-    }
-  ).then(() => {
-    User.find().then(() => {
-      res.json({
-        result: true,
-        message: "user update  ",
-      });
+    const token = jwt.sign(payload, secretKey, { algorithm: "HS256" });
+
+    const newUser = new User({
+      storeName: "NoStoreName",
+      username,
+      email,
+      token,
+      password: bcrypt.hashSync(password, 10),
+      isAdmin,
     });
-  });
+
+    const savedUser = await newUser.save();
+    res.json({result:true, token:savedUser.token,payload});
+  }
+  catch (error){
+    res.status(500).json({result:false,error:"Server error"});
+  }
 });
 
 
+router.post("/signin", async (req, res) => {
 
-//Permet de verifier si l'utilsateur existe avant de ce connecter
-router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["username", "password"])) {
-    res.json({ result: false, error: "Missing or empty field" });
-    return;
+  const requireBody = ["username", "password"];
+  const { username, password } = req.body;
+
+  if (!checkBody(req.body, requireBody)) {
+    return res.json({ result: false, error: "Missing or empty field" });
+
   }
 
-  User.findOne({
-    username: { $regex: new RegExp(req.body.username, "i") },
-  })
-  .then((data) => {
-    console.log(bcrypt.compareSync(req.body.password, data.password))
-    if (data) {
-      if (bcrypt.compareSync(req.body.password, data.password)) {
-        const decodedToken = jwt.decode(data.token);
+  try {
+    const user = await User.findOne({ username: { $regex: new RegExp(username, 'i') } });
 
-        if (decodedToken && moment().isBefore(decodedToken.exp)) {
-          res.json({
-            result: true,
-            token: data.token,
-            username: data.username,
-            storeName: data.storeName,
-          });
-        } else {
-          const payload = {
-            username: req.body.username,
-            email: req.body.email || "",
-            createdAt: moment().format("LLLL"),
-            expiresAt: moment().add(5, "minutes").format("LLLL"),
-          };
-
-          const newAccessToken = jwt.sign(payload, secretKey, {
-            algorithm: "HS256",
-          });
-          data.token = newAccessToken;
-          data.save().then((data) => {
-            res.json({
-              result: true,
-              payload: payload,
-              token: newAccessToken,
-              username: data.username,
-              storeName: data.storeName,
-              isAdmin: data.isAdmin,
-            });
-          });
-        }
-      } else {
-        res.json({ result: false, error: "User not found or wrong password" });
-      }
-    } else {
-      res.json({ result: false, error: "User not found" });
+    if (!user) {
+      return res.json({ result: false, error: "User not found" });
     }
-  })
-  .catch((error) => {
-    console.error("Error finding user:", error);
-    res.json({ result: false, error: "Error finding user" });
-  });
+
+    if (!bcrypt.compareSync(password, user.password)) {
+      return res.json({ result: false, error: "Wrong password" });
+    }
+
+    const decodedToken = jwt.decode(user.token);
+    const currentMoment = moment();
+
+    if (decodedToken && currentMoment.isBefore(decodedToken.exp)) {
+      return res.json({
+        result: true,
+        token: user.token,
+        username: user.username,
+        storeName: user.storeName,
+        isAdmin:user.isAdmin,
+      });
+    }
+
+    const payload = {
+      username,
+      email: req.body.email || "",
+      createdAt: currentMoment.format("LLLL"),
+      expiresAt: currentMoment.add(5, "minutes").format("LLLL"),
+    };
+
+    const newAccessToken = jwt.sign(payload, secretKey, { algorithm: "HS256" });
+    user.token = newAccessToken;
+    await user.save();
+
+    res.json({
+      result: true,
+      payload,
+      token: newAccessToken,
+      username: user.username,
+      storeName: user.storeName,
+      isAdmin: user.isAdmin,
+    });
+
+  } catch (error) {
+    console.error("Error during signin:", error);
+    res.status(500).json({ result: false, error: "Error during signin" });
+  }
 });
 
-// affiche tout les utilisateur
-router.get("/allUser", (req, res) => {
-  User.find().then((data) => {
-    if (data) {
-      res.json({ data });
-    } else {
-      res.json({ result: false, error: "User not found" });
-    }
-  });
-});
-
+// ?
 router.post("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({ username }).then((data) => {
-    
+
     if (data) {
       res.json({ id: data._id });
     } else {
@@ -178,107 +151,144 @@ router.post("/user", (req, res) => {
 });
 
 
-router.delete("/:email", (req, res) => {
-
-  const { email } = req.params;
-
-  // retrieve the user to be delete
-  User.findOne({ email }).then((userToDelete) => {
-    if (!userToDelete) {
-      res.json({ result: false, error: "User not found" });
-    } else {
-      // delete the user
-      User.deleteOne({ email: email }).then(() => {
-        res.json({ result: true, message: "User deleted successfully" });
-      });
-    }
-  });
-});
-
-
-const transporter = nodemailer.createTransport({
-  service: "Gmail", 
-  auth: {    
-    user: "stockstockify@gmail.com", // Adresse e-mail à partir de laquelle vous envoyez les e-mails
-    pass: process.env.SECRET_PASS // Mot de passe de l'adresse e-mail
-  },
-});
-
-router.post("/forgotPassword", (req, res) => {
+router.post("/forgotPassword", async (req, res) => {
   const { email } = req.body;
 
-  // Vérifiez si l'utilisateur avec cet e-mail existe
-  User.findOne({ email }).then((user) => {
+  try {
+    const user = await User.findOne({ email });
+
     if (!user) {
-      res.json({ result: false, error: "User not found" });
-    } else {
-      // Générer un jeton unique pour la réinitialisation du mot de passe
-      const resetToken = uid2(32);
-      user.resetPasswordToken = resetToken;
-      user.resetPasswordExpires = moment().add(1, "hour");
-
-      // Sauvegardez le jeton dans la base de données
-      user.save().then(() => {
-
-        const resetLink = `http://localhost:3001/resetPassword?token=${resetToken}`;
-
-
-        // Utilisez ici une bibliothèque d'envoi d'e-mails (nodemailer, sendgrid, etc.)
-        const mailOptions = {
-          from: "stockstockify@gmail.com",
-          to: email,
-          subject: "Réinitialisation de mot de passe",
-          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            console.error(error);
-            res.json({ result: false, error: "Failed to send password reset email" });
-          } else {
-            
-            res.json({ result: true, message: "Password reset email sent successfully", token:resetToken });
-          }
-        });
-      });
+      return res.json({ result: false, error: "User not found" });
     }
-  });
-});
 
+    const resetToken = uid2(32);
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = moment().add(1, "hour");
 
-router.post("/resetPassword", (req, res) => {
-  const { token, newPassword } = req.body;
-  
-  
-  // Vérifiez si le jeton est valide et mettez à jour le mot de passe de l'utilisateur
-  User.findOneAndUpdate(
-    {
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: moment().toDate() },
-    },
-    {
-      $set: {
-        password: bcrypt.hashSync(newPassword, 10),
-        resetPasswordToken: null,
-        resetPasswordExpires: null,
-      },
-    },
-    { new: true } // Renvoie le document mis à jour
-  )
-    .then(data => {
-      if (data) {
-        console.log(data.password)
-        res.json({ result: true, message: "Password reset successfully" });
+    await user.save();
+
+    const resetLink = `http://localhost:3001/resetPassword?token=${resetToken}`;
+
+    const mailOptions = {
+      from: "stockstockify@gmail.com",
+      to: email,
+      subject: "Réinitialisation de mot de passe",
+      text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        res.json({ result: false, error: "Failed to send password reset email" });
       } else {
-        res.json({ result: false, error: "Invalid or expired token" });
+        res.json({ result: true, message: "Password reset email sent successfully", token: resetToken });
       }
-    })
-    .catch(error => {
-      console.error('Error during password reset:', error);
-      res.json({ result: false, error: "Failed to reset password" });
     });
+
+  } catch (error) {
+    console.error("Error during password reset:", error);
+    res.status(500).json({ result: false, error: "Error during password reset" });
+  }
 });
 
+router.post("/resetPassword", async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    const user = await User.findOneAndUpdate(
+      {
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: moment().toDate() },
+      },
+      {
+        $set: {
+          password: bcrypt.hashSync(newPassword, 10),
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        },
+      },
+      { new: true }
+    );
+
+    if (user) {
+      return res.json({ result: true, message: "Password reset successfully" });
+    } else {
+      return res.json({ result: false, error: "Invalid or expired token" });
+    }
+
+  } catch (error) {
+    console.error("Error during password reset:", error);
+    res.status(500).json({ result: false, error: "Failed to reset password" });
+  }
+});
+
+//#endregion
+
+
+
+//#region PUT method
+
+router.put("/updateUser/:id", async (req, res) => {
+
+  const id = req.params.id;
+  const { isAdmin, username, email } = req.body;
+
+  try {
+    await User.updateOne({ _id: id }, { isAdmin, username, email })
+
+    res.json({ result: true, message: "User udpdated successfully" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Server error" });
+  }
+});
+
+//#endregion
+
+
+
+//#region GET method
+
+router.get("/allUser", async (req, res) => {
+  try {
+    const users = await User.find();
+
+    if (users.length > 0) {
+      return res.json({ data: users })
+    }
+
+    return res.json({ result: false, error: "No users found" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Error fetching users" });
+  }
+})
+
+
+
+//#endregion
+
+
+//#region DELETE method
+
+router.delete("/:email", async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ result: false, error: "User not found" });
+    }
+
+    await User.deleteOne({ email });
+    res.json({ result: true, message: "User deleted successfully" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Error deleting user" });
+  }
+})
+
+//#endregion
 
 
 
