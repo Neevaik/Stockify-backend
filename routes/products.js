@@ -320,7 +320,32 @@ router.get('/salesOfTheMonth', (req, res) => {
 });
 
 
-
+// Route pour obtenir les stocks de chaque produit au jour de la demande
+router.get('/stocksAtDay', (req, res) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    Product.find()
+      .then(products => {
+        const stocksAtDay = [];
+  
+        products.forEach(product => {
+          // On utilise directement la propriété `stock` qui est un nombre
+          stocksAtDay.push({
+            productId: product._id,
+            productName: product.name,
+            currentStock: product.stock,
+          });
+        });
+  
+        res.json({ result: true, stocksAtDay });
+      })
+      .catch(error => {
+        res.json({ result: false, error: 'Failed to fetch stocks at day', details: error });
+      });
+  });
+  
+  
 
 
 // Route ajout stock
@@ -328,7 +353,6 @@ router.put('/addStock/:name/:stock', (req, res) => {
     const todayDate = new Date();
     Product.findOne({name: req.params.name})
     .then(data => {
-        console.log(data.stock)
         Product.updateOne({name: req.params.name}, {stock: parseInt(data.stock) + parseInt(req.params.stock), $push: { restockAt: {date: todayDate, quantity: req.params.stock}}})
         .then(() => {
             Product.find().then(() => { res.json({ result: true, message: "stock added"});
@@ -346,7 +370,7 @@ router.put('/sell/:name/:stock', (req, res) => {
         .then(() => {
             Product.find().then(() => { res.json({ result: true, message: "stock added"});
             });
-        });
+        }); 
     })
 });
 
