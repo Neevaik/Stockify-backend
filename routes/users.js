@@ -86,7 +86,7 @@ router.put("/updateUser/:id", (req, res) => {
     User.find().then(() => {
       res.json({
         result: true,
-        message: "user update  ",
+        message: "user update",
       });
     });
   });
