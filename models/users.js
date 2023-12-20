@@ -8,6 +8,8 @@ const userSchema = mongoose.Schema({
   isAdmin: Boolean,
   password: String,
   token:String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 });
 
 const User = mongoose.model('users', userSchema);

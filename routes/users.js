@@ -17,6 +17,7 @@ const uid2 = require("uid2");
 //hashage du mot de passe ;
 const bcrypt = require("bcrypt");
 
+const nodemailer = require("nodemailer");
 
 const secretKey = uid2(32);
 
@@ -105,6 +106,7 @@ router.post("/signin", (req, res) => {
     username: { $regex: new RegExp(req.body.username, "i") },
   })
   .then((data) => {
+    console.log(bcrypt.compareSync(req.body.password, data.password))
     if (data) {
       if (bcrypt.compareSync(req.body.password, data.password)) {
         const decodedToken = jwt.decode(data.token);
@@ -166,7 +168,7 @@ router.get("/allUser", (req, res) => {
 router.post("/user", (req, res) => {
   const { username } = req.body;
   User.findOne({ username }).then((data) => {
-    console.log(data)
+    
     if (data) {
       res.json({ id: data._id });
     } else {
@@ -192,5 +194,92 @@ router.delete("/:email", (req, res) => {
     }
   });
 });
+
+
+const transporter = nodemailer.createTransport({
+  service: "Gmail", 
+  auth: {    
+    user: "stockstockify@gmail.com", // Adresse e-mail à partir de laquelle vous envoyez les e-mails
+    pass: process.env.SECRET_PASS // Mot de passe de l'adresse e-mail
+  },
+});
+
+router.post("/forgotPassword", (req, res) => {
+  const { email } = req.body;
+
+  // Vérifiez si l'utilisateur avec cet e-mail existe
+  User.findOne({ email }).then((user) => {
+    if (!user) {
+      res.json({ result: false, error: "User not found" });
+    } else {
+      // Générer un jeton unique pour la réinitialisation du mot de passe
+      const resetToken = uid2(32);
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = moment().add(1, "hour");
+
+      // Sauvegardez le jeton dans la base de données
+      user.save().then(() => {
+
+        const resetLink = `http://localhost:3001/resetPassword?token=${resetToken}`;
+
+
+        // Utilisez ici une bibliothèque d'envoi d'e-mails (nodemailer, sendgrid, etc.)
+        const mailOptions = {
+          from: "stockstockify@gmail.com",
+          to: email,
+          subject: "Réinitialisation de mot de passe",
+          text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error(error);
+            res.json({ result: false, error: "Failed to send password reset email" });
+          } else {
+            
+            res.json({ result: true, message: "Password reset email sent successfully", token:resetToken });
+          }
+        });
+      });
+    }
+  });
+});
+
+
+router.post("/resetPassword", (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  
+  // Vérifiez si le jeton est valide et mettez à jour le mot de passe de l'utilisateur
+  User.findOneAndUpdate(
+    {
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: moment().toDate() },
+    },
+    {
+      $set: {
+        password: bcrypt.hashSync(newPassword, 10),
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    },
+    { new: true } // Renvoie le document mis à jour
+  )
+    .then(data => {
+      if (data) {
+        console.log(data.password)
+        res.json({ result: true, message: "Password reset successfully" });
+      } else {
+        res.json({ result: false, error: "Invalid or expired token" });
+      }
+    })
+    .catch(error => {
+      console.error('Error during password reset:', error);
+      res.json({ result: false, error: "Failed to reset password" });
+    });
+});
+
+
+
 
 module.exports = router;
