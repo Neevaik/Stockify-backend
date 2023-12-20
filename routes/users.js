@@ -225,7 +225,6 @@ router.post("/resetPassword", async (req, res) => {
 //#endregion
 
 
-
 //#region PUT method
 
 router.put("/updateUser/:id", async (req, res) => {
@@ -244,7 +243,6 @@ router.put("/updateUser/:id", async (req, res) => {
 });
 
 //#endregion
-
 
 
 //#region GET method
@@ -289,7 +287,6 @@ router.delete("/:email", async (req, res) => {
 })
 
 //#endregion
-
 
 
 module.exports = router;
