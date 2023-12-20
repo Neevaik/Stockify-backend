@@ -267,7 +267,6 @@ router.post("/resetPassword", (req, res) => {
   )
     .then(data => {
       if (data) {
-        console.log(data.password)
         res.json({ result: true, message: "Password reset successfully" });
       } else {
         res.json({ result: false, error: "Invalid or expired token" });
