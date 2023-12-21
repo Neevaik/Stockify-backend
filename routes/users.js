@@ -151,6 +151,9 @@ router.post("/user", (req, res) => {
 });
 
 
+//#endregion
+
+
 router.post("/forgotPassword", async (req, res) => {
   const { email } = req.body;
 
@@ -176,7 +179,7 @@ router.post("/forgotPassword", async (req, res) => {
       text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
+    transporter.sendMail(mailOptions, (error) => {
       if (error) {
         console.error(error);
         res.json({ result: false, error: "Failed to send password reset email" });
@@ -190,6 +193,9 @@ router.post("/forgotPassword", async (req, res) => {
     res.status(500).json({ result: false, error: "Error during password reset" });
   }
 });
+
+
+
 
 router.post("/resetPassword", async (req, res) => {
   const { token, newPassword } = req.body;
