@@ -384,7 +384,7 @@ router.put('/updateMyProduct/:name', (req, res) => {
         return;
     }  
 
-    
+     
     Product.findOne({name: req.params.name})
     .then(data => {
         Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price, stock: req.body.stock})
