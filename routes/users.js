@@ -168,7 +168,7 @@ router.post("/forgotPassword", async (req, res) => {
 
     await user.save();
 
-    const resetLink = `http://localhost:3001/resetPassword?token=${resetToken}`;
+    const resetLink = `https://stockify-frontend-wine.vercel.app/resetPassword?token=${resetToken}`;
 
     const mailOptions = {
       from: "stockstockify@gmail.com",
