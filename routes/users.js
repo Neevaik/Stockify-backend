@@ -17,17 +17,10 @@ const bcrypt = require("bcrypt");
 
 const nodemailer = require("nodemailer");
 const secretKey = uid2(32);
+
+const dotenv = require('dotenv')
 //#endregion
 
-
-// sendMail
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  auth: {
-    user: "stockstockify@gmail.com",
-    pass: process.env.SECRET_PASS,
-  },
-});
 
 //#region post method
 
@@ -150,6 +143,14 @@ router.post("/user", (req, res) => {
   });
 });
 
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: "stockstockify@gmail.com",
+    pass: process.env.SECRET_PASS,
+  },
+});
+
 
 router.post("/forgotPassword", async (req, res) => {
   const { email } = req.body;
@@ -160,7 +161,7 @@ router.post("/forgotPassword", async (req, res) => {
     if (!user) {
       return res.json({ result: false, error: "User not found" });
     }
-
+    console.log(user)
     const resetToken = uid2(32);
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = moment().add(1, "hour");
