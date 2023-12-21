@@ -17,23 +17,16 @@ const bcrypt = require("bcrypt");
 
 const nodemailer = require("nodemailer");
 const secretKey = uid2(32);
+
+const dotenv = require('dotenv')
 //#endregion
 
-
-// sendMail
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  auth: {
-    user: "stockstockify@gmail.com",
-    pass: process.env.SECRET_PASS,
-  },
-});
 
 //#region post method
 
 router.post("/addUser", async(req, res) => {
 
-  const requireBody = ["username", "password", "email","isAdmin"];
+  const requireBody = ["username", "password", "email"];
   const { email, username, password, isAdmin } = req.body;
 
   if (!checkBody(req.body, requireBody)) {
@@ -153,6 +146,13 @@ router.post("/user", (req, res) => {
 
 //#endregion
 
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: "stockstockify@gmail.com",
+    pass: process.env.SECRET_PASS,
+  },
+});
 
 router.post("/forgotPassword", async (req, res) => {
   const { email } = req.body;
@@ -163,7 +163,7 @@ router.post("/forgotPassword", async (req, res) => {
     if (!user) {
       return res.json({ result: false, error: "User not found" });
     }
-
+    console.log(user)
     const resetToken = uid2(32);
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = moment().add(1, "hour");
@@ -199,56 +199,100 @@ router.post("/forgotPassword", async (req, res) => {
 
 router.post("/resetPassword", async (req, res) => {
   const { token, newPassword } = req.body;
-  
-  
-  // Vérifiez si le jeton est valide et mettez à jour le mot de passe de l'utilisateur
-  User.findOneAndUpdate(
-    {
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: moment().toDate() },
-    },
-    {
-      $set: {
-        password: bcrypt.hashSync(newPassword, 10),
-        resetPasswordToken: null,
-        resetPasswordExpires: null,
+
+  try {
+    const user = await User.findOneAndUpdate(
+      {
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: moment().toDate() },
       },
-    },
-    { new: true } // Renvoie le document mis à jour
-  )
-    .then(data => {
-      if (data) {
-        res.json({ result: true, message: "Password reset successfully" });
-      } else {
-        res.json({ result: false, error: "Invalid or expired token" });
-      }
-    })
-    .catch(error => {
-      console.error('Error during password reset:', error);
-      res.json({ result: false, error: "Failed to reset password" });
-    });
+      {
+        $set: {
+          password: bcrypt.hashSync(newPassword, 10),
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        },
+      },
+      { new: true }
+    );
+
+    if (user) {
+      return res.json({ result: true, message: "Password reset successfully" });
+    } else {
+      return res.json({ result: false, error: "Invalid or expired token" });
+    }
+
+  } catch (error) {
+    console.error("Error during password reset:", error);
+    res.status(500).json({ result: false, error: "Failed to reset password" });
+  }
 });
 
+//#endregion
 
 
-router.delete("/:email", (req, res) => {
+//#region PUT method
 
+router.put("/updateUser/:id", async (req, res) => {
+
+  const id = req.params.id;
+  const { isAdmin, username, email } = req.body;
+
+  try {
+    await User.updateOne({ _id: id }, { isAdmin, username, email })
+
+    res.json({ result: true, message: "User udpdated successfully" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Server error" });
+  }
+});
+
+//#endregion
+
+
+//#region GET method
+
+router.get("/allUser", async (req, res) => {
+  try {
+    const users = await User.find();
+
+    if (users.length > 0) {
+      return res.json({ data: users })
+    }
+
+    return res.json({ result: false, error: "No users found" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Error fetching users" });
+  }
+})
+
+
+
+//#endregion
+
+
+//#region DELETE method
+
+router.delete("/:email", async (req, res) => {
   const { email } = req.params;
 
-  // retrieve the user to be delete
-  User.findOne({ email }).then((userToDelete) => {
-    if (!userToDelete) {
-      res.json({ result: false, error: "User not found" });
-    } else {
-      // delete the user
-      User.deleteOne({ email: email }).then(() => {
-        res.json({ result: true, message: "User deleted successfully" });
-      });
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ result: false, error: "User not found" });
     }
-  });
-});
 
+    await User.deleteOne({ email });
+    res.json({ result: true, message: "User deleted successfully" });
+  }
+  catch (error) {
+    res.status(500).json({ result: false, error: "Error deleting user" });
+  }
+})
 
+//#endregion
 
 
 module.exports = router;
