@@ -414,12 +414,15 @@ router.post('/productsByCategoryId', (req, res) => {
 // Route pour gérer l'upload de fichier photo via Cloudinary
 
   router.post('/newProductWithImage', async (req, res) => {
+    console.log("hello")
     try {
       const existingProduct = await Product.findOne({ name: req.body.name }).populate('category');
   
       if (existingProduct === null) {
-        const photoPath = `./tmp/${uniqid()}.jpg`;
+        console.log("yoyoyo")
+        const photoPath = `/tmp/${uniqid()}.jpg`;
         const resultMove = await req.files.photoFromFront.mv(photoPath);
+        console.log(photoPath + " " + resultMove)
   
         if (!resultMove) {
           const resultCloudinary = await cloudinary.uploader.upload(photoPath);
