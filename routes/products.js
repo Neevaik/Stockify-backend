@@ -384,7 +384,7 @@ router.put('/updateMyProduct/:name', (req, res) => {
         return;
     }  
 
-    
+     
     Product.findOne({name: req.params.name})
     .then(data => {
         Product.updateOne({name: req.params.name}, {name: req.body.name, image: req.body.image, category: req.body.category, price: req.body.price, stock: req.body.stock})
@@ -419,7 +419,6 @@ router.post('/productsByCategoryId', (req, res) => {
       const existingProduct = await Product.findOne({ name: req.body.name }).populate('category');
   
       if (existingProduct === null) {
-        console.log("yoyoyo")
         const photoPath = `/tmp/${uniqid()}.jpg`;
         const resultMove = await req.files.photoFromFront.mv(photoPath);
         console.log(photoPath + " " + resultMove)
