@@ -6,6 +6,8 @@ var router = express.Router();
 const Category = require ('../models/categories')
 const Product = require('../models/products'); 
 
+const { checkBody } = require("../modules/checkBody");
+
 //#endregion
 
 
@@ -44,11 +46,11 @@ router.post('/newCategory', async (req, res) => {
 
 router.put('/updateCategory/:name', async (req, res) => {
     const name = req.params.name;
-    const { newName, image } = req.body;
+    console.log(req.params.name)
+    console.log(req.body.categoryName)
 
     const updateCategory = {
-        name: newName,
-        image,
+        name: req.body.categoryName,
     }
     try {
         const category = await Category.findOneAndUpdate({ name }, updateCategory, { new: true })
@@ -63,6 +65,25 @@ router.put('/updateCategory/:name', async (req, res) => {
         res.status(500).json({ result: false, error: 'Failed to update category' });
     }
 })
+
+
+// Route update d'une category
+router.put('/updateMyCategory/:name', (req, res) => {
+
+  if (!checkBody(req.body, ["name"])) {
+      res.json({ result: false, error: "Missing or empty fields" });
+      return;
+  };
+
+  Category.findOne({name: req.params.name})
+  .then(data => {
+      Category.updateOne({name: req.params.name}, {name: req.body.name})
+      .then(() => {
+          Category.find().then(() => { res.json({ result: true, updatedCategory: data});
+          });
+      });
+  })
+});
 
 //#endregion 
 

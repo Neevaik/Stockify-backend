@@ -24,7 +24,7 @@ router.post('/newProduct', (req, res)=> {
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
-        if (!checkBody(req.body, ["name", "stock", "price"])) {
+        if (!checkBody(req.body, ["name", "price"])) {
             res.json({ result: false, error: "Missing or empty fields" });
             return;
         }       
@@ -32,7 +32,7 @@ router.post('/newProduct', (req, res)=> {
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
-            stock: req.body.stock,
+            stock: req.body.stock || 0,
             price: req.body.price,
             category: req.body.category || defaultCategoryId, // default category if not provided
         })
@@ -378,10 +378,12 @@ router.put('/sell/:name/:stock', (req, res) => {
 // Route update d'un produit
 router.put('/updateMyProduct/:name', (req, res) => {
 
-    if (!checkBody(req.body, ["name", "stock", "price"])) {
+    if (!checkBody(req.body, ["name"])) {
+        if(req.body.stock == '' || req.body.stock == null || req.body.price == '' || req.body.price == null)
         res.json({ result: false, error: "Missing or empty fields" });
         return;
     }  
+
     
     Product.findOne({name: req.params.name})
     .then(data => {
