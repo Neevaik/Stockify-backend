@@ -378,10 +378,12 @@ router.put('/sell/:name/:stock', (req, res) => {
 // Route update d'un produit
 router.put('/updateMyProduct/:name', (req, res) => {
 
-    if (!checkBody(req.body, ["name", "stock", "price"])) {
+    if (!checkBody(req.body, ["name"])) {
+        if(req.body.stock == '' || req.body.stock == null || req.body.price == '' || req.body.price == null)
         res.json({ result: false, error: "Missing or empty fields" });
         return;
     }  
+
     
     Product.findOne({name: req.params.name})
     .then(data => {
