@@ -39,32 +39,6 @@ router.post('/newCategory', async (req, res) => {
 
 })
 
-//#endregion
-
-//#region PUT methods
-
-
-router.put('/updateCategory/:name', async (req, res) => {
-    const name = req.params.name;
-    console.log(req.params.name)
-    console.log(req.body.categoryName)
-
-    const updateCategory = {
-        name: req.body.categoryName,
-    }
-    try {
-        const category = await Category.findOneAndUpdate({ name }, updateCategory, { new: true })
-
-        if (category) {
-            return res.json({ result: true, category });
-        } else {
-            return res.json({ result: false, error: 'Category not found' });
-        }
-    }
-    catch (error) {
-        res.status(500).json({ result: false, error: 'Failed to update category' });
-    }
-})
 
 
 // Route update d'une category
@@ -126,23 +100,6 @@ router.get('/allCategories', async (req, res) => {
     }
 });
 
-router.get('/getId/:name', async (req, res) => {
-    try {
-      const category = await Category.findOne({ name: req.params.name });
-  
-      if (category) {
-        return res.json({ result: true, categoryId: category._id });
-      } else {
-        return res.json({ result: false, error: 'Category not found' });
-      }
-  
-    } catch (error) {
-      console.error('Error fetching category ID:', error);
-      res.status(500).json({ result: false, error: 'Failed to fetch category ID' });
-    }
-  });
-
-//#endregion
 
 
 

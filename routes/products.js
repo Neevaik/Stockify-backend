@@ -47,127 +47,7 @@ router.post('/newProduct', (req, res)=> {
   })
 });
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-//  Modification new Product        //
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-// Route de base à conserver        //
-// Pour toute modification Admin    //
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-router.put('/updateProduct/:name', async (req, res) => {
 
-    // Check if name is provided
-    if (!req.params.name) {
-        return res.json({result: false, error: 'Name is required'});
-    }
-
-    //Regex // ou checkbody
-
-    const name = req.params.name;
-    const updatedProduct = {
-      name: req.body.name,
-      image: req.body.image,
-      //stock: req.body.stock,
-      //soldAt: JSON.parse(req.body.soldAt),
-      //restockAt: JSON.parse(req.body.restockAt),
-      category: req.body.category,
-    };
-  
-    try {
-      // Ask findOneAndUpdate to return the updated document
-      // First parameter is the Search's Object / Object who hold new information
-      // new: true specify to send the new version of the doc instead of the original
-      const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-      .populate('category');
-      if (product) {
-        res.json({ result: true, product });
-      } else {
-        res.json({ result: false, error: 'Product not found' });
-      }
-    } catch (error) {
-      res.json({ result: false, error });
-    }
-  });
-
-//////////////////////////
-//Update Stock Only
-//Data format number only
-router.put('/updateStockProduct/:name', async (req, res) => {
-    const name = req.params.name;
-    const updatedProduct = {
-
-      stock: req.body.stock,
-
-    };
-  
-    try {
-        // Ask findOneAndUpdate to return the updated document
-        // First parameter is the Search's Object / Object who hold new information
-        // new: true specify to send the new version of the doc instead of the original
-        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-        .populate('category');
-        if (product) {
-            res.json({ result: true, product });
-        } else {
-            res.json({ result: false, error: 'Product not found' });
-        }
-        } catch (error) {
-            res.json({ result: false, error });
-        }
-  });
-
-//////////////////////////
-//Update soldAt Only
-//Data format [{"date":"YYYY/MM/DD","quantity":X}]
-router.put('/updateSoldAtProduct/:name', async (req, res) => {
-    const name = req.params.name;
-    const updatedProduct = {
-
-      soldAt: JSON.parse(req.body.soldAt),
-
-    };
-  
-    try {
-        // Ask findOneAndUpdate to return the updated document
-        // First parameter is the Search's Object / Object who hold new information
-        // new: true specify to send the new version of the doc instead of the original
-        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-        .populate('category');
-        if (product) {
-            res.json({ result: true, product });
-        } else {
-            res.json({ result: false, error: 'Product not found' });
-        }
-        } catch (error) {
-        res.json({ result: false, error });
-        }
-  });
-
-//////////////////////////
-//Update restockAt Only
-//Data format [{"date":"YYYY/MM/DD","quantity":X}]
-router.put('/updateRestockAtProduct/:name', async (req, res) => {
-    const name = req.params.name;
-    const updatedProduct = {
-
-      restockAt: JSON.parse(req.body.restockAt),
-
-    };
-  
-    try {
-        // Ask findOneAndUpdate to return the updated document
-        // First parameter is the Search's Object / Object who hold new information
-        // new: true specify to send the new version of the doc instead of the original
-        const product = await Product.findOneAndUpdate({ name: name }, updatedProduct, { new: true })
-        .populate('category');
-        if (product) {
-            res.json({ result: true, product });
-        } else {
-            res.json({ result: false, error: 'Product not found' });
-        }
-        } catch (error) {
-        res.json({ result: false, error });
-        }
-  });
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 //Delete route for Product
@@ -221,103 +101,6 @@ router.get('/', (req, res) => {
     });
 });
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-// Get selling by periode
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-//GET Selling By Present Day
-router.get('/salesToday', (req, res) => {
-    //Get the date of to day
-    let today = new Date();
-    today.setHours(0, 0, 0, 0);
-    //Get the date of tomorrow
-    let tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    Product.aggregate([
-        //$unwind go in object array of soldAt
-        { $unwind: "$soldAt" },
-        //$match find and get the date
-        //$gte egal to or greater than
-        //$lt egal to or less than
-        { $match: { "soldAt.date": { $gte: today, $lt: tomorrow } } },
-        //$group the name of article and quantity
-        { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
-    ])
-    .then(data => {
-        if (data.length > 0) {
-            res.json({ result: true, salesToday: data });
-        } else {
-            res.json({ result: false, error: 'No sales found for today' });
-        }
-    })
-    .catch(error => {
-        res.json({ result: false, error });
-    });
-});
-
-////////////////////////////
-//GET Selling By Present Week
-router.get('/salesOfTheWeek', (req, res) => {
-    //Get the date of to Week
-    let today = new Date();
-    today.setHours(0, 0, 0, 0);
-    //Get the date 7 days later
-    let week = new Date(today);
-    week.setDate(week.getDate() + 7);
-
-    Product.aggregate([
-        //$unwind go in object array of soldAt
-        { $unwind: "$soldAt" },
-        //$match find and get the date
-        //$gte egal to or greater than
-        //$lt egal to or less than
-        { $match: { "soldAt.date": { $gte: today, $lt: week } } },
-        //$group the name of article and quantity
-        { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
-    ])
-    .then(data => {
-        if (data.length > 0) {
-            res.json({ result: true, salesOfTheWeek: data });
-        } else {
-            res.json({ result: false, error: 'No sales found for today' });
-        }
-    })
-    .catch(error => {
-        res.json({ result: false, error });
-    });
-});
-
-////////////////////////////
-//GET Selling By Present Month
-router.get('/salesOfTheMonth', (req, res) => {
-    //Get the date of to Month
-    let today = new Date();
-    today.setHours(0, 0, 0, 0);
-    //Get the date 30 days later
-    let month = new Date(today);
-    month.setDate(month.getDate() + 30);
-
-    Product.aggregate([
-        //$unwind go in object array of soldAt
-        { $unwind: "$soldAt" },
-        //$match find and get the date
-        //$gte egal to or greater than
-        //$lt egal to or less than
-        { $match: { "soldAt.date": { $gte: today, $lt: month } } },
-        //$group the name of article and quantity
-        { $group: { _id: "$name", total: { $sum: "$soldAt.quantity" } } }
-    ])
-    .then(data => {
-        if (data.length > 0) {
-            res.json({ result: true, salesOfTheWeek: data });
-        } else {
-            res.json({ result: false, error: 'No sales found for today' });
-        }
-    })
-    .catch(error => {
-        res.json({ result: false, error });
-    });
-});
 
 
 // Route pour obtenir les stocks de chaque produit au jour de la demande
@@ -400,8 +183,6 @@ router.put('/updateMyProduct/:name', (req, res) => {
 router.post('/productsByCategoryId', (req, res) => {
     Product.find({category: req.body.categoryId})
     .then(data => {
-        console.log(req.body.categoryId)
-        console.log(data)
         if (data.length > 0) {
             res.json({ result: true, allProducts: data });
         } else {
@@ -414,7 +195,6 @@ router.post('/productsByCategoryId', (req, res) => {
 // Route pour gérer l'upload de fichier photo via Cloudinary
 
   router.post('/newProductWithImage', async (req, res) => {
-    console.log("hello")
     try {
       const existingProduct = await Product.findOne({ name: req.body.name }).populate('category');
   
