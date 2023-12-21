@@ -24,7 +24,7 @@ router.post('/newProduct', (req, res)=> {
     //Checking if product already exists
     if(data === null) {
         //If not existing = Creation
-        if (!checkBody(req.body, ["name", "stock", "price"])) {
+        if (!checkBody(req.body, ["name", "price"])) {
             res.json({ result: false, error: "Missing or empty fields" });
             return;
         }       
@@ -32,7 +32,7 @@ router.post('/newProduct', (req, res)=> {
         const newProduct = new Product({
             name: req.body.name,
             image: req.body.image,
-            stock: req.body.stock,
+            stock: req.body.stock || 0,
             price: req.body.price,
             category: req.body.category || defaultCategoryId, // default category if not provided
         })
