@@ -231,5 +231,24 @@ router.post("/resetPassword", async (req, res) => {
 
 
 
+router.delete("/:email", (req, res) => {
+
+  const { email } = req.params;
+
+  // retrieve the user to be delete
+  User.findOne({ email }).then((userToDelete) => {
+    if (!userToDelete) {
+      res.json({ result: false, error: "User not found" });
+    } else {
+      // delete the user
+      User.deleteOne({ email: email }).then(() => {
+        res.json({ result: true, message: "User deleted successfully" });
+      });
+    }
+  });
+});
+
+
+
 
 module.exports = router;
