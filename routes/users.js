@@ -130,18 +130,7 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-// ?
-router.post("/user", (req, res) => {
-  const { username } = req.body;
-  User.findOne({ username }).then((data) => {
 
-    if (data) {
-      res.json({ id: data._id });
-    } else {
-      res.json({ result: false, error: "User not found" });
-    }
-  });
-});
 
 
 //#endregion
@@ -149,7 +138,7 @@ router.post("/user", (req, res) => {
 const transporter = nodemailer.createTransport({
   service: "Gmail",
   auth: {
-    user: "stockstockify@gmail.com",
+    user: process.env.GMAIL_USER,
     pass: process.env.SECRET_PASS,
   },
 });
