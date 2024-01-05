@@ -374,7 +374,7 @@ router.put('/addStock/:name/:stock', (req, res) => {
     });
 });
 
-// Route sortie de stock 
+// Route sortie de stock stock
 router.put('/sell/:name/:stock', (req, res) => {
     const todayDate = new Date();
     Product.findOne({name: req.params.name})
